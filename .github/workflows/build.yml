@@ -20,7 +20,9 @@ jobs:
 
       # 2. 手动安装 Nightly 工具链及 rust-src (专用于编译 eBPF)
       - name: Install Nightly Toolchain for eBPF
-        run: rustup toolchain install nightly --component rust-src
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src
 
       # 3. 安装 eBPF 专用链接器 (核心修复！)
       - name: Install bpf-linker
@@ -30,14 +32,22 @@ jobs:
       - name: Install Cross
         run: cargo install cross --git https://github.com/cross-rs/cross
 
-      # 5. 使用 nightly 编译 eBPF (必须加 -Z build-std=core)
+      # 5. 使用 nightly 编译 eBPF
+      # 关键修改：显式添加 RUSTFLAGS，确保使用 bpf-linker
       - name: Build eBPF Kernel Program
-        run: cargo +nightly build --target bpfel-unknown-none -Z build-std=core -p mem_cleaner_ebpf --release
+        run: |
+          cd mem_cleaner_ebpf
+          RUSTFLAGS="-C linker=bpf-linker" cargo +nightly build \
+            --target bpfel-unknown-none \
+            -Z build-std=core \
+            --release
 
+      # 验证一下文件类型，如果是 "ELF 64-bit LSB eBPF"，那就对了
       - name: Verify eBPF Artifact
-        run: ls -la target/bpfel-unknown-none/release/mem_cleaner_ebpf
+        run: file target/bpfel-unknown-none/release/mem_cleaner_ebpf
 
       # 6. 使用 stable 和 cross 编译 Android 主程序
+      # 注意：Cross 会挂载当前目录，所以 target 目录下的 ebpf 文件是可见的
       - name: Build User-space Daemon for Android (aarch64)
         env:
           CROSS_NO_WARNINGS: 0
