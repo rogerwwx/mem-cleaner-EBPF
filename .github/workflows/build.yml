@@ -32,8 +32,6 @@ jobs:
 
       # 5. 使用 nightly 编译 eBPF (必须加 -Z build-std=core)
       - name: Build eBPF Kernel Program
-        env:
-          CARGO_PROFILE_RELEASE_LTO: "false"
         run: cargo +nightly build --target bpfel-unknown-none -Z build-std=core -p mem_cleaner_ebpf --release
 
       - name: Verify eBPF Artifact
