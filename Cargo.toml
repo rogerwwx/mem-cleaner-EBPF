@@ -1,8 +1,8 @@
 [workspace]
 members = [
     "mem_cleaner",
-    "mem_cleaner-ebpf",
-    "mem_cleaner-common",
+    "mem_cleaner_ebpf",
+    "mem_cleaner_common",
 ]
 resolver = "2"
 
@@ -18,5 +18,5 @@ debug = false
 rpath = false
 
 # eBPF 内核态包的局部覆盖 (只覆盖 opt-level，不碰 lto)
-[profile.release.package.mem_cleaner-ebpf]
+[profile.release.package.mem_cleaner_ebpf]
 opt-level = 3

@@ -1,7 +1,7 @@
 use aya::programs::TracePoint;
 use aya::Bpf;
 use aya::maps::RingBuf;
-use mem_cleaner-common::ProcessEvent;
+use mem_cleaner_common::ProcessEvent;
 
 use fxhash::FxHashSet;
 use nix::sys::signal::{kill, Signal};
@@ -57,7 +57,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let logger = Arc::new(Mutex::new(logger));
 
     // 1. 动态加载 eBPF 字节码
-    let bpf_bytes = include_bytes!("../../target/bpfel-unknown-none/release/mem_cleaner-ebpf");
+    let bpf_bytes = include_bytes!("../../target/bpfel-unknown-none/release/mem_cleaner_ebpf");
     let mut bpf = Bpf::load(bpf_bytes)?;
 
     // 2. 挂载 Tracepoint (sys_enter_setresuid)
