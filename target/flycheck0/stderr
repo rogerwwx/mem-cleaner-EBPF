@@ -1,5 +1,5 @@
-   0.131165500s  INFO prepare_target{force=false package_id=mem_cleaner v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner) target="mem_cleaner"}: cargo::core::compiler::fingerprint: fingerprint error for mem_cleaner v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner)/Check { test: false }/TargetInner { name: "mem_cleaner", doc: true, ..: with_path("C:\\Users\\zcm\\Downloads\\mem-cleaner-EBPF\\mem_cleaner\\src\\main.rs", Edition2021) }
-   0.131225900s  INFO prepare_target{force=false package_id=mem_cleaner v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner) target="mem_cleaner"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\mem_cleaner-a8ef22a1e3e8355e\bin-mem_cleaner`
+   0.080940100s  INFO prepare_target{force=false package_id=mem_cleaner v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner) target="mem_cleaner"}: cargo::core::compiler::fingerprint: fingerprint error for mem_cleaner v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner)/Check { test: false }/TargetInner { name: "mem_cleaner", doc: true, ..: with_path("C:\\Users\\zcm\\Downloads\\mem-cleaner-EBPF\\mem_cleaner\\src\\main.rs", Edition2021) }
+   0.080988200s  INFO prepare_target{force=false package_id=mem_cleaner v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner) target="mem_cleaner"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\mem_cleaner-a8ef22a1e3e8355e\bin-mem_cleaner`
 
 Caused by:
     系统找不到指定的文件。 (os error 2)
@@ -26,8 +26,8 @@ Stack backtrace:
   18: git_midx_writer_dump
   19: BaseThreadInitThunk
   20: RtlUserThreadStart
-   0.150624400s  INFO prepare_target{force=false package_id=aya v0.12.0 target="aya"}: cargo::core::compiler::fingerprint: fingerprint error for aya v0.12.0/Check { test: false }/TargetInner { name_inferred: true, ..: lib_target("aya", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\aya-0.12.0\\src\\lib.rs", Edition2021) }
-   0.150663700s  INFO prepare_target{force=false package_id=aya v0.12.0 target="aya"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\aya-ba4c2511711d7aa0\lib-aya`
+   0.091589100s  INFO prepare_target{force=false package_id=aya v0.12.0 target="aya"}: cargo::core::compiler::fingerprint: fingerprint error for aya v0.12.0/Check { test: false }/TargetInner { name_inferred: true, ..: lib_target("aya", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\aya-0.12.0\\src\\lib.rs", Edition2021) }
+   0.091618800s  INFO prepare_target{force=false package_id=aya v0.12.0 target="aya"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\aya-ba4c2511711d7aa0\lib-aya`
 
 Caused by:
     系统找不到指定的文件。 (os error 2)
@@ -55,8 +55,8 @@ Stack backtrace:
   19: git_midx_writer_dump
   20: BaseThreadInitThunk
   21: RtlUserThreadStart
-   0.151695500s  INFO prepare_target{force=false package_id=aya-obj v0.1.0 target="aya_obj"}: cargo::core::compiler::fingerprint: fingerprint error for aya-obj v0.1.0/Check { test: false }/TargetInner { name_inferred: true, ..: lib_target("aya_obj", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\aya-obj-0.1.0\\src\\lib.rs", Edition2021) }
-   0.151728800s  INFO prepare_target{force=false package_id=aya-obj v0.1.0 target="aya_obj"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\aya-obj-a3119ed9506011cd\lib-aya_obj`
+   0.092447400s  INFO prepare_target{force=false package_id=aya-obj v0.1.0 target="aya_obj"}: cargo::core::compiler::fingerprint: fingerprint error for aya-obj v0.1.0/Check { test: false }/TargetInner { name_inferred: true, ..: lib_target("aya_obj", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\aya-obj-0.1.0\\src\\lib.rs", Edition2021) }
+   0.092471100s  INFO prepare_target{force=false package_id=aya-obj v0.1.0 target="aya_obj"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\aya-obj-a3119ed9506011cd\lib-aya_obj`
 
 Caused by:
     系统找不到指定的文件。 (os error 2)
@@ -85,8 +85,8 @@ Stack backtrace:
   20: git_midx_writer_dump
   21: BaseThreadInitThunk
   22: RtlUserThreadStart
-   0.185945000s  INFO prepare_target{force=false package_id=mem_cleaner v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner) target="mem_cleaner"}: cargo::core::compiler::fingerprint: fingerprint error for mem_cleaner v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner)/Check { test: true }/TargetInner { name: "mem_cleaner", doc: true, ..: with_path("C:\\Users\\zcm\\Downloads\\mem-cleaner-EBPF\\mem_cleaner\\src\\main.rs", Edition2021) }
-   0.185978600s  INFO prepare_target{force=false package_id=mem_cleaner v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner) target="mem_cleaner"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\mem_cleaner-8318476c3cd8b23f\test-bin-mem_cleaner`
+   0.107067800s  INFO prepare_target{force=false package_id=mem_cleaner v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner) target="mem_cleaner"}: cargo::core::compiler::fingerprint: fingerprint error for mem_cleaner v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner)/Check { test: true }/TargetInner { name: "mem_cleaner", doc: true, ..: with_path("C:\\Users\\zcm\\Downloads\\mem-cleaner-EBPF\\mem_cleaner\\src\\main.rs", Edition2021) }
+   0.107094400s  INFO prepare_target{force=false package_id=mem_cleaner v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner) target="mem_cleaner"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\mem_cleaner-8318476c3cd8b23f\test-bin-mem_cleaner`
 
 Caused by:
     系统找不到指定的文件。 (os error 2)

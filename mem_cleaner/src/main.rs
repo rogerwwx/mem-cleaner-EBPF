@@ -20,7 +20,7 @@ use time::macros::format_description;
 use time::{format_description::FormatItem, Date, OffsetDateTime};
 
 const OOM_SCORE_THRESHOLD: i32 = 800;
-const INIT_DELAY_SECS: u64 = 3;
+const INIT_DELAY_SECS: u64 = 1;
 const DEFAULT_INTERVAL: u64 = 60;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -63,9 +63,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let bpf_bytes = include_bytes!("../../target/bpfel-unknown-none/release/mem_cleaner_ebpf");
     let mut bpf = Bpf::load(bpf_bytes)?;
 
-    let program: &mut TracePoint = bpf.program_mut("trace_setresuid").unwrap().try_into()?;
+    let program: &mut TracePoint = bpf.program_mut("sched_process_exec").unwrap().try_into()?;
     program.load()?;
-    program.attach("syscalls", "sys_enter_setresuid")?;
+    program.attach("sched", "sched_process_exec")?;
     println!("✅ eBPF Tracepoint 挂载成功!");
 
     // 使用支持 Tokio Async 的 AsyncPerfEventArray

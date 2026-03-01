@@ -1,6 +1,3 @@
-#![no_std]
-#![no_main]
-
 use aya_ebpf::{
     macros::{map, tracepoint},
     maps::PerfEventArray,
@@ -8,34 +5,28 @@ use aya_ebpf::{
 };
 use mem_cleaner_common::ProcessEvent;
 
-// 使用 PerfEventArray 替代 RingBuf，完美兼容异步 Tokio
 #[map]
 static EVENTS: PerfEventArray<ProcessEvent> = PerfEventArray::new(0);
 
 #[tracepoint]
-pub fn trace_setresuid(ctx: TracePointContext) -> u32 {
-    match try_trace_setresuid(ctx) {
+pub fn sched_process_exec(ctx: TracePointContext) -> u32 {
+    match try_sched_process_exec(ctx) {
         Ok(ret) => ret,
         Err(ret) => ret,
     }
 }
 
-fn try_trace_setresuid(ctx: TracePointContext) -> Result<u32, u32> {
-    let ruid = match unsafe { ctx.read_at::<u32>(16) } {
-        Ok(v) => v,
-        Err(_) => return Ok(0),
-    };
-
-    if ruid < 10000 {
-        return Ok(0);
-    }
-
+fn try_sched_process_exec(ctx: TracePointContext) -> Result<u32, u32> {
+    // 获取当前 pid
     let pid_tgid = aya_ebpf::helpers::bpf_get_current_pid_tgid();
     let pid = (pid_tgid >> 32) as u32;
 
-    let event = ProcessEvent { pid, uid: ruid };
+    // sched_process_exec tracepoint 的 comm 在偏移 0 处
+    // 这里简单读取 uid（可选），也可以只传 pid
+    let uid = unsafe { ctx.read_at::<u32>(0).unwrap_or(0) };
 
-    // 一行代码直接输出到用户态，无需手动 reserve 和 submit
+    let event = ProcessEvent { pid, uid };
+
     EVENTS.output(&ctx, &event, 0);
 
     Ok(0)
