@@ -11,6 +11,9 @@ jobs:
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          path: .
 
       # 1. 安装稳定版工具链 (用于编译 Android 用户态)
       - name: Install Stable Rust Toolchain
