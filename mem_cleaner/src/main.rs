@@ -29,11 +29,7 @@ const DEFAULT_INTERVAL: u64 = 60;
 const MIN_APP_UID: u32 = 10000;
 
 // === 新增 Doze 相关配置 ===
-// 当检测到 Doze 模式时，暂停轮询的时长 (秒)，建议设长一点，比如 5 分钟
 const DOZE_PAUSE_SECS: u64 = 300;
-
-// Doze 状态检测命令 (Android 6.0+ 支持)
-// 使用 cmd 相比 dumpsys 更轻量
 const DOZE_CHECK_CMD: &str = "deviceidle";
 const DOZE_CHECK_ARGS: &[&str] = &["get", "deep"];
 
@@ -89,7 +85,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let bpf_bytes = include_bytes!("../../target/bpfel-unknown-none/release/mem_cleaner_ebpf");
     let mut bpf = Bpf::load(bpf_bytes)?;
 
-    // 依然使用 sched_process_exec，抓取新启动的二进制程序
     let program: &mut TracePoint = bpf.program_mut("sched_process_exec").unwrap().try_into()?;
     program.load()?;
     program.attach("sched", "sched_process_exec")?;
@@ -135,22 +130,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 }
 
-fn is_in_deep_doze() -> bool {
-    // 执行: cmd deviceidle get deep
-    // 输出: "IDLE" (休眠) 或 "ACTIVE" (活跃) / "INACTIVE" (未激活)
-    if let Ok(output) = Command::new("cmd") // 注意：必须在 root 下运行，eBPF 本身就要求 root
-        .arg(DOZE_CHECK_CMD)
-        .args(DOZE_CHECK_ARGS)
-        .output()
-    {
-        let output_str = String::from_utf8_lossy(&output.stdout);
-        // 只要输出包含 IDLE 且不包含 INACTIVE/ACTIVE 即视为休眠
-        return output_str.trim() == "IDLE";
-    }
-    // 如果命令执行失败，默认认为设备是醒着的，继续监控，防止漏杀
-    false
-}
-
 async fn register_new_process(
     pid: u32,
     monitoring_pids: Arc<Mutex<FxHashSet<u32>>>,
@@ -158,12 +137,11 @@ async fn register_new_process(
 ) {
     sleep(Duration::from_secs(INIT_DELAY_SECS)).await;
 
-    // 1. UID 过滤：这是最重要的安全检查！
-    // 如果获取不到 UID (进程已死) 或者 UID < 10000 (系统进程)，直接忽略
+    // 1. UID 过滤
     match get_process_uid(pid) {
-        Some(uid) if uid < MIN_APP_UID => return, // 忽略系统进程
-        None => return,                           // 进程不存在
-        _ => {}                                   // 用户进程，继续
+        Some(uid) if uid < MIN_APP_UID => return,
+        None => return,
+        _ => {}
     }
 
     // 2. Cmdline 检查和白名单
@@ -178,27 +156,20 @@ async fn register_new_process(
     pids.insert(pid);
 }
 
-/// 监控阶段：周期性轮询所有嫌疑进程
 async fn start_monitor_loop(
     monitoring_pids: Arc<Mutex<FxHashSet<u32>>>,
     config: Arc<AppConfig>,
     logger: Arc<Mutex<Option<Logger>>>,
 ) {
     loop {
-        // --- 1. Doze 状态检测 ---
+        // --- Doze 检测 ---
         if is_in_deep_doze() {
-            // 如果处于 Doze 模式，打印日志（可选）并进入长睡眠
-            // 此时不进行任何 PID 检查，彻底让出 CPU
-            // println!("💤 设备处于 Doze 模式，暂停监控 {} 秒...", DOZE_PAUSE_SECS);
             sleep(Duration::from_secs(DOZE_PAUSE_SECS)).await;
-            continue; // 跳过本次循环，直接进入下一轮检测
+            continue;
         }
 
-        // --- 2. 正常的轮询间隔 ---
-        // 设备处于活跃状态，按配置文件中的间隔等待 (默认 60s)
         sleep(Duration::from_secs(config.interval)).await;
 
-        // --- 3. 执行核心监控逻辑 (保持不变) ---
         let pids_to_check: Vec<u32> = {
             let pids = monitoring_pids.lock().await;
             pids.iter().cloned().collect()
@@ -211,17 +182,14 @@ async fn start_monitor_loop(
         let mut pids_to_remove = Vec::new();
 
         for pid in pids_to_check {
-            // 检查进程存活
             let cmdline = get_cmdline(pid);
             if cmdline.is_empty() {
                 pids_to_remove.push(pid);
                 continue;
             }
 
-            // 检查 OOM 分数
             let score = get_oom_score(pid);
 
-            // 杀掉后台进程
             if score >= OOM_SCORE_THRESHOLD {
                 if kill(Pid::from_raw(pid as i32), Signal::SIGKILL).is_ok() {
                     let mut log_guard = logger.lock().await;
@@ -235,7 +203,6 @@ async fn start_monitor_loop(
             }
         }
 
-        // 移除已处理的 PID
         if !pids_to_remove.is_empty() {
             let mut pids = monitoring_pids.lock().await;
             for pid in pids_to_remove {
@@ -244,6 +211,66 @@ async fn start_monitor_loop(
         }
     }
 }
+
+// ==========================================
+// ⬇️⬇️⬇️ 缺失的辅助函数在这里 ⬇️⬇️⬇️
+// ==========================================
+
+/// 获取进程 UID 的辅助函数
+fn get_process_uid(pid: u32) -> Option<u32> {
+    let path = format!("/proc/{}", pid);
+    fs::metadata(path).ok().map(|m| m.uid())
+}
+
+fn get_oom_score(pid: u32) -> i32 {
+    let path = format!("/proc/{}/oom_score_adj", pid);
+    if let Ok(content) = fs::read_to_string(&path) {
+        if let Ok(score) = content.trim().parse::<i32>() {
+            return score;
+        }
+    }
+    -1000
+}
+
+fn is_in_deep_doze() -> bool {
+    if let Ok(output) = Command::new("cmd")
+        .arg(DOZE_CHECK_CMD)
+        .args(DOZE_CHECK_ARGS)
+        .output()
+    {
+        let output_str = String::from_utf8_lossy(&output.stdout);
+        return output_str.trim() == "IDLE";
+    }
+    false
+}
+
+fn get_cmdline(pid: u32) -> String {
+    let path = format!("/proc/{}/cmdline", pid);
+    if let Ok(content) = fs::read(&path) {
+        if let Some(slice) = content.split(|&c| c == 0).next() {
+            return String::from_utf8_lossy(slice).into_owned();
+        }
+    }
+    String::new()
+}
+
+fn is_in_whitelist(cmdline: &str, whitelist: &FxHashSet<WhitelistRule>) -> bool {
+    if whitelist.contains(&WhitelistRule::Exact(cmdline.to_string())) {
+        return true;
+    }
+    for rule in whitelist {
+        if let WhitelistRule::Prefix(prefix) = rule {
+            if cmdline.starts_with(prefix) {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+// ==========================================
+// ⬆️⬆️⬆️ 缺失的辅助函数在这里 ⬆️⬆️⬆️
+// ==========================================
 
 fn load_config(path: &str) -> AppConfig {
     let mut interval = DEFAULT_INTERVAL;
