@@ -1,0 +1,11 @@
+[package]
+name = "mem_cleaner-ebpf"
+version = "0.2.0"
+edition = "2021"
+
+[dependencies]
+aya-ebpf = "0.1.0" # Aya 的 eBPF 内核库
+mem_cleaner-common = { path = "../mem_cleaner-common" }
+
+[build-dependencies]
+aya-build = "0.1.0"

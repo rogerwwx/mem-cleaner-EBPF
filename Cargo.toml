@@ -1,0 +1,24 @@
+[workspace]
+members = [
+    "mem_cleaner",
+    "mem_cleaner-ebpf",
+    "mem_cleaner-common",
+]
+resolver = "2"
+
+# 你原本的体积极致优化配置 (对用户态生效)
+[profile.release]
+opt-level = "z"
+lto = "fat"
+panic = "abort"
+strip = "symbols"
+codegen-units = 1
+incremental = false
+debug = false
+rpath = false
+
+# 内核态 eBPF 需要特定的编译配置 (不能用胖 LTO，必须是 abort)
+[profile.release.package.mem_cleaner-ebpf]
+opt-level = 3
+lto = false
+codegen-units = 1

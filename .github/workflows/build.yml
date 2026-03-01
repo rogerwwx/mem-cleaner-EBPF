@@ -1,0 +1,51 @@
+name: Build Android eBPF Binary
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Install Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          # 同时添加 Android 和 eBPF 两个编译目标
+          targets: aarch64-linux-android, bpfel-unknown-none
+          # eBPF 编译强依赖 rust-src 组件
+          components: rust-src
+
+      - name: Install Cross (使用最新Git版以修复libunwind bug)
+        run: cargo install cross --git https://github.com/cross-rs/cross
+
+      # --- 第一步：编译内核态 eBPF 字节码 ---
+      - name: Build eBPF Kernel Program
+        # 注意：这里直接使用原生的 cargo，因为 eBPF 是纯净无依赖的 target，不需要 NDK
+        run: cargo build --target bpfel-unknown-none -p mem_cleaner-ebpf --release
+
+      - name: Verify eBPF Artifact
+        # 验证 eBPF 产物是否成功生成，以便下一步的 include_bytes! 宏能找到它
+        run: ls -la target/bpfel-unknown-none/release/mem_cleaner-ebpf
+
+      # --- 第二步：编译用户态 Android 主程序 ---
+      - name: Build User-space Daemon for Android (aarch64)
+        env:
+          CROSS_NO_WARNINGS: 0 # 关闭新版 cross 烦人的警告报错机制
+        # 使用 cross 编译 Android 架构，会自动处理复杂的 NDK 链接问题
+        run: cross build --target aarch64-linux-android -p mem_cleaner --release
+
+      - name: Rename and Package Binary
+        run: |
+          mkdir -p output
+          cp target/aarch64-linux-android/release/mem_cleaner output/mem_cleaner
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mem_cleaner_ebpf_arm64
+          path: output/mem_cleaner
