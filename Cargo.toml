@@ -6,7 +6,7 @@ members = [
 ]
 resolver = "2"
 
-# 你原本的体积极致优化配置 (对用户态生效)
+# 全局 Release 配置 (保留你极致的体积压缩，作用于 Android 主程序)
 [profile.release]
 opt-level = "z"
 lto = "fat"
@@ -17,8 +17,6 @@ incremental = false
 debug = false
 rpath = false
 
-# 内核态 eBPF 需要特定的编译配置 (不能用胖 LTO，必须是 abort)
+# eBPF 内核态包的局部覆盖 (只覆盖 opt-level，不碰 lto)
 [profile.release.package.mem_cleaner-ebpf]
 opt-level = 3
-lto = false
-codegen-units = 1

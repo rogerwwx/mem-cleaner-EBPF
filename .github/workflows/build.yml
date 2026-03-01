@@ -27,6 +27,9 @@ jobs:
 
       # 3. 使用 nightly 编译 eBPF (必须加 -Z build-std=core)
       - name: Build eBPF Kernel Program
+        env:
+          # 核心技巧：通过环境变量临时给 eBPF 编译关闭 LTO，防止 bpf-linker 报错
+          CARGO_PROFILE_RELEASE_LTO: "false"
         run: cargo +nightly build --target bpfel-unknown-none -Z build-std=core -p mem_cleaner-ebpf --release
 
       - name: Verify eBPF Artifact
@@ -36,6 +39,7 @@ jobs:
       - name: Build User-space Daemon for Android (aarch64)
         env:
           CROSS_NO_WARNINGS: 0
+          # 这里不覆盖 LTO，让它默认使用 Cargo.toml 里的 lto="fat" 极致压缩
         run: cross +stable build --target aarch64-linux-android -p mem_cleaner --release
 
       - name: Rename and Package Binary
