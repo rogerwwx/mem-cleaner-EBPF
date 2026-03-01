@@ -8,21 +8,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ${{ github.workspace }}
-
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-          path: .
-
-      - name: Debug Directory (确认目录结构)
-        run: |
-          pwd
-          ls -la
 
       # 1. 安装稳定版工具链 (用于编译 Android 用户态)
       - name: Install Stable Rust Toolchain
@@ -34,10 +22,15 @@ jobs:
       - name: Install Nightly Toolchain for eBPF
         run: rustup toolchain install nightly --component rust-src
 
+      # 3. 安装 eBPF 专用链接器 (核心修复！)
+      - name: Install bpf-linker
+        run: cargo install bpf-linker
+
+      # 4. 安装 Cross (用于跨平台编译 Android ARM64)
       - name: Install Cross
         run: cargo install cross --git https://github.com/cross-rs/cross
 
-      # 3. 使用 nightly 编译 eBPF (必须加 -Z build-std=core)
+      # 5. 使用 nightly 编译 eBPF (必须加 -Z build-std=core)
       - name: Build eBPF Kernel Program
         env:
           CARGO_PROFILE_RELEASE_LTO: "false"
@@ -46,7 +39,7 @@ jobs:
       - name: Verify eBPF Artifact
         run: ls -la target/bpfel-unknown-none/release/mem_cleaner_ebpf
 
-      # 4. 使用 stable 和 cross 编译 Android 主程序
+      # 6. 使用 stable 和 cross 编译 Android 主程序
       - name: Build User-space Daemon for Android (aarch64)
         env:
           CROSS_NO_WARNINGS: 0
