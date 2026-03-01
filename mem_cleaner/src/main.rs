@@ -17,12 +17,10 @@ use std::sync::Arc;
 use time::macros::format_description;
 use time::{format_description::FormatItem, Date, OffsetDateTime};
 
-// --- 常量配置 ---
 const OOM_SCORE_THRESHOLD: i32 = 800; 
-const INIT_DELAY_SECS: u64 = 3;     // 短延迟：等待 AMS 下发 OOM Score 和改名
-const DEFAULT_INTERVAL: u64 = 60;   // 默认观察期(可通过配置文件覆盖)
+const INIT_DELAY_SECS: u64 = 3;     
+const DEFAULT_INTERVAL: u64 = 60;   
 
-// --- 结构体与白名单 ---
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 enum WhitelistRule {
     Exact(String),
@@ -30,11 +28,10 @@ enum WhitelistRule {
 }
 
 struct AppConfig {
-    interval: u64, // 现在的 interval 代表“观察期/容忍期”
+    interval: u64,
     whitelist: FxHashSet<WhitelistRule>,
 }
 
-// --- 主程序入口 ---
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
@@ -48,7 +45,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("⚡ 正在初始化 eBPF 进程压制器 (Kernel 5.15) ⚡");
     
-    // 加载配置，包含 interval 解析
     let config = Arc::new(load_config(config_path));
     println!("⏱️  设置进程容忍观察期: {} 秒", config.interval);
 
@@ -56,25 +52,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(l) = &mut logger { l.write_startup(); }
     let logger = Arc::new(Mutex::new(logger));
 
-    // 1. 动态加载 eBPF 字节码
+    // 核心修复：确保加载的路径和编译产物名称完全对应（注意这里的名称是 mem_cleaner_ebpf）
     let bpf_bytes = include_bytes!("../../target/bpfel-unknown-none/release/mem_cleaner_ebpf");
     let mut bpf = Bpf::load(bpf_bytes)?;
 
-    // 2. 挂载 Tracepoint (sys_enter_setresuid)
     let program: &mut TracePoint = bpf.program_mut("trace_setresuid").unwrap().try_into()?;
     program.load()?;
     program.attach("syscalls", "sys_enter_setresuid")?;
     println!("✅ eBPF Tracepoint 挂载成功!");
 
-    // 3. 打开 Ring Buffer 监听器
     let mut ring_buf = RingBuf::try_from(bpf.map_mut("EVENTS").unwrap())?;
-
-    // 用于记录正在观察期的 PID，防止重复触发
     let tracking_pids = Arc::new(Mutex::new(FxHashSet::default()));
 
     println!("🎧 进入极低功耗事件监听模式...");
 
-    // 4. 异步无阻塞事件循环
     loop {
         let Some(item) = ring_buf.next().await else { continue };
         let event = unsafe { std::ptr::read_unaligned(item.as_ptr() as *const ProcessEvent) };
@@ -83,33 +74,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let cfg = config.clone();
         let log = logger.clone();
 
-        // 为每个新进程派生一个轻量级协程
         tokio::spawn(async move {
             handle_new_process(event.pid, tracking, cfg, log).await;
         });
     }
 }
 
-/// 核心逻辑：双重延迟状态机
 async fn handle_new_process(
     pid: u32, 
     tracking: Arc<Mutex<FxHashSet<u32>>>, 
     config: Arc<AppConfig>,
     logger: Arc<Mutex<Option<Logger>>>,
 ) {
-    // 查重：防止同一个 PID 触发多个并行观察任务
     {
         let mut t = tracking.lock().await;
         if t.contains(&pid) { return; }
         t.insert(pid);
     }
 
-    // ==========================================
-    // 阶段 1：短延迟等待 AMS 赋值
-    // ==========================================
     sleep(Duration::from_secs(INIT_DELAY_SECS)).await;
 
-    // 获取 Cmdline 和 OOM Score
     let cmdline = get_cmdline(pid);
     if cmdline.is_empty() || !cmdline.contains(':') || is_in_whitelist(&cmdline, &config.whitelist) {
         remove_tracking(pid, &tracking).await;
@@ -121,16 +105,11 @@ async fn handle_new_process(
         return;
     }
 
-    // ==========================================
-    // 阶段 2：长延迟观察期 (使用配置文件中的 interval)
-    // ==========================================
     sleep(Duration::from_secs(config.interval)).await;
 
-    // 终极检查：过了 interval 秒依然赖在后台？
     let final_score = get_oom_score(pid);
     if final_score >= OOM_SCORE_THRESHOLD {
         if kill(Pid::from_raw(pid as i32), Signal::SIGKILL).is_ok() {
-            // 写入日志
             let mut log_guard = logger.lock().await;
             if let Some(l) = log_guard.as_mut() {
                 l.write_cleanup(&[cmdline.clone()]);
@@ -140,8 +119,6 @@ async fn handle_new_process(
 
     remove_tracking(pid, &tracking).await;
 }
-
-// --- 辅助与工具函数 ---
 
 async fn remove_tracking(pid: u32, tracking: &Arc<Mutex<FxHashSet<u32>>>) {
     let mut t = tracking.lock().await;
@@ -155,7 +132,7 @@ fn get_oom_score(pid: u32) -> i32 {
             return score;
         }
     }
-    -1000 // 读取失败说明进程已死
+    -1000 
 }
 
 fn get_cmdline(pid: u32) -> String {
@@ -169,26 +146,19 @@ fn get_cmdline(pid: u32) -> String {
 }
 
 fn is_in_whitelist(cmdline: &str, whitelist: &FxHashSet<WhitelistRule>) -> bool {
-    if whitelist.contains(&WhitelistRule::Exact(cmdline.to_string())) {
-        return true;
-    }
+    if whitelist.contains(&WhitelistRule::Exact(cmdline.to_string())) { return true; }
     for rule in whitelist {
         if let WhitelistRule::Prefix(prefix) = rule {
-            if cmdline.starts_with(prefix) {
-                return true;
-            }
+            if cmdline.starts_with(prefix) { return true; }
         }
     }
     false
 }
 
-// --- 配置与日志 ---
-
 fn load_config(path: &str) -> AppConfig {
     let mut interval = DEFAULT_INTERVAL;
     let mut whitelist: FxHashSet<WhitelistRule> = FxHashSet::default();
     
-    // 默认白名单
     whitelist.insert(WhitelistRule::Exact("com.android.systemui".to_string()));
     whitelist.insert(WhitelistRule::Exact("android".to_string()));
     whitelist.insert(WhitelistRule::Exact("com.android.phone".to_string()));
@@ -199,25 +169,19 @@ fn load_config(path: &str) -> AppConfig {
             let line = line.trim();
             if line.is_empty() || line.starts_with('#') { continue; }
 
-            // 解析 interval: xxx
             if line.starts_with("interval:") {
                 if let Some(val_part) = line.split(':').nth(1) {
-                    if let Ok(val) = val_part.trim().parse::<u64>() {
-                        interval = val;
-                    }
+                    if let Ok(val) = val_part.trim().parse::<u64>() { interval = val; }
                 }
                 in_whitelist_mode = false;
             } else if line.starts_with("whitelist:") {
                 in_whitelist_mode = true;
-                if let Some(val_part) = line.split(':').nth(1) {
-                    parse_whitelist_rules(val_part, &mut whitelist);
-                }
+                if let Some(val_part) = line.split(':').nth(1) { parse_whitelist_rules(val_part, &mut whitelist); }
             } else if in_whitelist_mode {
                 parse_whitelist_rules(line, &mut whitelist);
             }
         }
     }
-
     AppConfig { interval, whitelist }
 }
 

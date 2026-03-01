@@ -4,17 +4,10 @@ version = "0.2.0"
 edition = "2021"
 
 [dependencies]
-# eBPF 用户态加载与控制框架
 aya = "0.12.0"
-anyhow = "1.0" # 用于优雅的错误处理
-
-# 异步运行时
 tokio = { version = "1.36", features = ["macros", "rt-multi-thread", "time", "sync"] }
-
-# 你原来的依赖
 nix = { version = "0.28", default-features = false, features = ["time", "signal", "fs", "process"] }
 time = { version = "0.3", default-features = false, features = ["formatting", "local-offset", "macros", "std"] }
 fxhash = "0.2"
 itoa = "1.0"
-
 mem_cleaner_common = { path = "../mem_cleaner_common" }

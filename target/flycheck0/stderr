@@ -1,0 +1,1181 @@
+   0.167450200s  INFO prepare_target{force=false package_id=mem_cleaner v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner) target="mem_cleaner"}: cargo::core::compiler::fingerprint: stale: missing "C:\\Users\\zcm\\Downloads\\mem-cleaner-EBPF\\target\\debug\\.fingerprint\\cfg-if-f8bf42d2fc0c3243\\dep-lib-cfg_if"
+   0.178200600s  INFO prepare_target{force=false package_id=mem_cleaner v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner) target="mem_cleaner"}: cargo::core::compiler::fingerprint: fingerprint error for mem_cleaner v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner)/Check { test: false }/TargetInner { name: "mem_cleaner", doc: true, ..: with_path("C:\\Users\\zcm\\Downloads\\mem-cleaner-EBPF\\mem_cleaner\\src\\main.rs", Edition2021) }
+   0.178266400s  INFO prepare_target{force=false package_id=mem_cleaner v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner) target="mem_cleaner"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\mem_cleaner-9c77725a1b8f46e1\bin-mem_cleaner`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_libgit2_prerelease
+  12: <unknown>
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+  16: git_midx_writer_dump
+  17: git_filter_source_repo
+  18: git_midx_writer_dump
+  19: BaseThreadInitThunk
+  20: RtlUserThreadStart
+   0.198996700s  INFO prepare_target{force=false package_id=aya v0.12.0 target="aya"}: cargo::core::compiler::fingerprint: fingerprint error for aya v0.12.0/Check { test: false }/TargetInner { name_inferred: true, ..: lib_target("aya", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\aya-0.12.0\\src\\lib.rs", Edition2021) }
+   0.199041200s  INFO prepare_target{force=false package_id=aya v0.12.0 target="aya"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\aya-cc71bc4ac735bd37\lib-aya`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_libgit2_prerelease
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+  16: <unknown>
+  17: git_midx_writer_dump
+  18: git_filter_source_repo
+  19: git_midx_writer_dump
+  20: BaseThreadInitThunk
+  21: RtlUserThreadStart
+   0.200255300s  INFO prepare_target{force=false package_id=assert_matches v1.5.0 target="assert_matches"}: cargo::core::compiler::fingerprint: fingerprint error for assert_matches v1.5.0/Check { test: false }/TargetInner { name_inferred: true, ..: lib_target("assert_matches", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\assert_matches-1.5.0\\src\\lib.rs", Edition2015) }
+   0.200312400s  INFO prepare_target{force=false package_id=assert_matches v1.5.0 target="assert_matches"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\assert_matches-dcdc1654889c1a75\lib-assert_matches`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_filter_source_repo
+  13: git_libgit2_prerelease
+  14: <unknown>
+  15: <unknown>
+  16: <unknown>
+  17: <unknown>
+  18: git_midx_writer_dump
+  19: git_filter_source_repo
+  20: git_midx_writer_dump
+  21: BaseThreadInitThunk
+  22: RtlUserThreadStart
+   0.200967600s  INFO prepare_target{force=false package_id=aya-obj v0.1.0 target="aya_obj"}: cargo::core::compiler::fingerprint: fingerprint error for aya-obj v0.1.0/Check { test: false }/TargetInner { name_inferred: true, ..: lib_target("aya_obj", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\aya-obj-0.1.0\\src\\lib.rs", Edition2021) }
+   0.200997700s  INFO prepare_target{force=false package_id=aya-obj v0.1.0 target="aya_obj"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\aya-obj-4f0add13a6764b13\lib-aya_obj`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_filter_source_repo
+  13: git_libgit2_prerelease
+  14: <unknown>
+  15: <unknown>
+  16: <unknown>
+  17: <unknown>
+  18: git_midx_writer_dump
+  19: git_filter_source_repo
+  20: git_midx_writer_dump
+  21: BaseThreadInitThunk
+  22: RtlUserThreadStart
+   0.201764400s  INFO prepare_target{force=false package_id=bytes v1.11.1 target="bytes"}: cargo::core::compiler::fingerprint: fingerprint error for bytes v1.11.1/Check { test: false }/TargetInner { ..: lib_target("bytes", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\bytes-1.11.1\\src\\lib.rs", Edition2021) }
+   0.201794700s  INFO prepare_target{force=false package_id=bytes v1.11.1 target="bytes"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\bytes-254bf57b1469565e\lib-bytes`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_filter_source_repo
+  13: git_filter_source_repo
+  14: git_libgit2_prerelease
+  15: <unknown>
+  16: <unknown>
+  17: <unknown>
+  18: <unknown>
+  19: git_midx_writer_dump
+  20: git_filter_source_repo
+  21: git_midx_writer_dump
+  22: BaseThreadInitThunk
+  23: RtlUserThreadStart
+   0.202574500s  INFO prepare_target{force=false package_id=core-error v0.0.0 target="core_error"}: cargo::core::compiler::fingerprint: fingerprint error for core-error v0.0.0/Check { test: false }/TargetInner { name_inferred: true, ..: lib_target("core_error", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\core-error-0.0.0\\src\\lib.rs", Edition2015) }
+   0.202616600s  INFO prepare_target{force=false package_id=core-error v0.0.0 target="core_error"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\core-error-047b5ee4cb9a2ffd\lib-core_error`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_filter_source_repo
+  13: git_filter_source_repo
+  14: git_libgit2_prerelease
+  15: <unknown>
+  16: <unknown>
+  17: <unknown>
+  18: <unknown>
+  19: git_midx_writer_dump
+  20: git_filter_source_repo
+  21: git_midx_writer_dump
+  22: BaseThreadInitThunk
+  23: RtlUserThreadStart
+   0.204864300s  INFO prepare_target{force=false package_id=hashbrown v0.14.5 target="hashbrown"}: cargo::core::compiler::fingerprint: fingerprint error for hashbrown v0.14.5/Check { test: false }/TargetInner { name_inferred: true, ..: lib_target("hashbrown", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\hashbrown-0.14.5\\src\\lib.rs", Edition2021) }
+   0.204903100s  INFO prepare_target{force=false package_id=hashbrown v0.14.5 target="hashbrown"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\hashbrown-72c5f767c1af9b0d\lib-hashbrown`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_filter_source_repo
+  13: git_filter_source_repo
+  14: git_libgit2_prerelease
+  15: <unknown>
+  16: <unknown>
+  17: <unknown>
+  18: <unknown>
+  19: git_midx_writer_dump
+  20: git_filter_source_repo
+  21: git_midx_writer_dump
+  22: BaseThreadInitThunk
+  23: RtlUserThreadStart
+   0.205647000s  INFO prepare_target{force=false package_id=ahash v0.8.12 target="ahash"}: cargo::core::compiler::fingerprint: fingerprint error for ahash v0.8.12/Check { test: false }/TargetInner { ..: lib_target("ahash", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\ahash-0.8.12\\src\\lib.rs", Edition2018) }
+   0.205679100s  INFO prepare_target{force=false package_id=ahash v0.8.12 target="ahash"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\ahash-e76894e1cfb04be8\lib-ahash`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_filter_source_repo
+  13: git_filter_source_repo
+  14: git_filter_source_repo
+  15: git_libgit2_prerelease
+  16: <unknown>
+  17: <unknown>
+  18: <unknown>
+  19: <unknown>
+  20: git_midx_writer_dump
+  21: git_filter_source_repo
+  22: git_midx_writer_dump
+  23: BaseThreadInitThunk
+  24: RtlUserThreadStart
+   0.208637300s  INFO prepare_target{force=false package_id=cfg-if v1.0.4 target="cfg_if"}: cargo::core::compiler::fingerprint: fingerprint error for cfg-if v1.0.4/Check { test: false }/TargetInner { ..: lib_target("cfg_if", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\cfg-if-1.0.4\\src\\lib.rs", Edition2018) }
+   0.208690000s  INFO prepare_target{force=false package_id=cfg-if v1.0.4 target="cfg_if"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\cfg-if-f8bf42d2fc0c3243\lib-cfg_if`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_filter_source_repo
+  13: git_filter_source_repo
+  14: git_filter_source_repo
+  15: git_filter_source_repo
+  16: git_libgit2_prerelease
+  17: <unknown>
+  18: <unknown>
+  19: <unknown>
+  20: <unknown>
+  21: git_midx_writer_dump
+  22: git_filter_source_repo
+  23: git_midx_writer_dump
+  24: BaseThreadInitThunk
+  25: RtlUserThreadStart
+   0.209846000s  INFO prepare_target{force=false package_id=once_cell v1.21.3 target="once_cell"}: cargo::core::compiler::fingerprint: fingerprint error for once_cell v1.21.3/Check { test: false }/TargetInner { ..: lib_target("once_cell", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\once_cell-1.21.3\\src\\lib.rs", Edition2021) }
+   0.209900000s  INFO prepare_target{force=false package_id=once_cell v1.21.3 target="once_cell"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\once_cell-b69a55a4793ebb7f\lib-once_cell`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_filter_source_repo
+  13: git_filter_source_repo
+  14: git_filter_source_repo
+  15: git_filter_source_repo
+  16: git_libgit2_prerelease
+  17: <unknown>
+  18: <unknown>
+  19: <unknown>
+  20: <unknown>
+  21: git_midx_writer_dump
+  22: git_filter_source_repo
+  23: git_midx_writer_dump
+  24: BaseThreadInitThunk
+  25: RtlUserThreadStart
+   0.211653900s  INFO prepare_target{force=false package_id=zerocopy v0.8.40 target="zerocopy"}: cargo::core::compiler::fingerprint: fingerprint error for zerocopy v0.8.40/Check { test: false }/TargetInner { ..: lib_target("zerocopy", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\zerocopy-0.8.40\\src\\lib.rs", Edition2021) }
+   0.211710900s  INFO prepare_target{force=false package_id=zerocopy v0.8.40 target="zerocopy"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\zerocopy-9c93e0477d1e05d6\lib-zerocopy`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_filter_source_repo
+  13: git_filter_source_repo
+  14: git_filter_source_repo
+  15: git_filter_source_repo
+  16: git_libgit2_prerelease
+  17: <unknown>
+  18: <unknown>
+  19: <unknown>
+  20: <unknown>
+  21: git_midx_writer_dump
+  22: git_filter_source_repo
+  23: git_midx_writer_dump
+  24: BaseThreadInitThunk
+  25: RtlUserThreadStart
+   0.214864600s  INFO prepare_target{force=false package_id=allocator-api2 v0.2.21 target="allocator_api2"}: cargo::core::compiler::fingerprint: fingerprint error for allocator-api2 v0.2.21/Check { test: false }/TargetInner { ..: lib_target("allocator_api2", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\allocator-api2-0.2.21\\src\\lib.rs", Edition2018) }
+   0.214918400s  INFO prepare_target{force=false package_id=allocator-api2 v0.2.21 target="allocator_api2"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\allocator-api2-4595206d1c10a8a2\lib-allocator_api2`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_filter_source_repo
+  13: git_filter_source_repo
+  14: git_filter_source_repo
+  15: git_libgit2_prerelease
+  16: <unknown>
+  17: <unknown>
+  18: <unknown>
+  19: <unknown>
+  20: git_midx_writer_dump
+  21: git_filter_source_repo
+  22: git_midx_writer_dump
+  23: BaseThreadInitThunk
+  24: RtlUserThreadStart
+   0.215950600s  INFO prepare_target{force=false package_id=log v0.4.29 target="log"}: cargo::core::compiler::fingerprint: fingerprint error for log v0.4.29/Check { test: false }/TargetInner { ..: lib_target("log", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\log-0.4.29\\src\\lib.rs", Edition2021) }
+   0.215998900s  INFO prepare_target{force=false package_id=log v0.4.29 target="log"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\log-5a9119114236f0fa\lib-log`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_filter_source_repo
+  13: git_filter_source_repo
+  14: git_libgit2_prerelease
+  15: <unknown>
+  16: <unknown>
+  17: <unknown>
+  18: <unknown>
+  19: git_midx_writer_dump
+  20: git_filter_source_repo
+  21: git_midx_writer_dump
+  22: BaseThreadInitThunk
+  23: RtlUserThreadStart
+   0.216984100s  INFO prepare_target{force=false package_id=object v0.32.2 target="object"}: cargo::core::compiler::fingerprint: fingerprint error for object v0.32.2/Check { test: false }/TargetInner { name_inferred: true, ..: lib_target("object", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\object-0.32.2\\src\\lib.rs", Edition2018) }
+   0.217028800s  INFO prepare_target{force=false package_id=object v0.32.2 target="object"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\object-dea6edb2537e40ac\lib-object`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_filter_source_repo
+  13: git_filter_source_repo
+  14: git_libgit2_prerelease
+  15: <unknown>
+  16: <unknown>
+  17: <unknown>
+  18: <unknown>
+  19: git_midx_writer_dump
+  20: git_filter_source_repo
+  21: git_midx_writer_dump
+  22: BaseThreadInitThunk
+  23: RtlUserThreadStart
+   0.218129700s  INFO prepare_target{force=false package_id=memchr v2.8.0 target="memchr"}: cargo::core::compiler::fingerprint: fingerprint error for memchr v2.8.0/Check { test: false }/TargetInner { benched: false, ..: lib_target("memchr", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\memchr-2.8.0\\src\\lib.rs", Edition2021) }
+   0.218170600s  INFO prepare_target{force=false package_id=memchr v2.8.0 target="memchr"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\memchr-1157358f9d78cba5\lib-memchr`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_filter_source_repo
+  13: git_filter_source_repo
+  14: git_filter_source_repo
+  15: git_libgit2_prerelease
+  16: <unknown>
+  17: <unknown>
+  18: <unknown>
+  19: <unknown>
+  20: git_midx_writer_dump
+  21: git_filter_source_repo
+  22: git_midx_writer_dump
+  23: BaseThreadInitThunk
+  24: RtlUserThreadStart
+   0.219117200s  INFO prepare_target{force=false package_id=thiserror v1.0.69 target="thiserror"}: cargo::core::compiler::fingerprint: fingerprint error for thiserror v1.0.69/Check { test: false }/TargetInner { ..: lib_target("thiserror", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\thiserror-1.0.69\\src\\lib.rs", Edition2021) }
+   0.219157700s  INFO prepare_target{force=false package_id=thiserror v1.0.69 target="thiserror"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\thiserror-96bf0d1e7ade858b\lib-thiserror`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_filter_source_repo
+  13: git_filter_source_repo
+  14: git_libgit2_prerelease
+  15: <unknown>
+  16: <unknown>
+  17: <unknown>
+  18: <unknown>
+  19: git_midx_writer_dump
+  20: git_filter_source_repo
+  21: git_midx_writer_dump
+  22: BaseThreadInitThunk
+  23: RtlUserThreadStart
+   0.229891800s  INFO prepare_target{force=false package_id=bitflags v2.11.0 target="bitflags"}: cargo::core::compiler::fingerprint: fingerprint error for bitflags v2.11.0/Check { test: false }/TargetInner { ..: lib_target("bitflags", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\bitflags-2.11.0\\src\\lib.rs", Edition2021) }
+   0.229943500s  INFO prepare_target{force=false package_id=bitflags v2.11.0 target="bitflags"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\bitflags-0bb1163d08d5eb75\lib-bitflags`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_filter_source_repo
+  13: git_libgit2_prerelease
+  14: <unknown>
+  15: <unknown>
+  16: <unknown>
+  17: <unknown>
+  18: git_midx_writer_dump
+  19: git_filter_source_repo
+  20: git_midx_writer_dump
+  21: BaseThreadInitThunk
+  22: RtlUserThreadStart
+   0.230868500s  INFO prepare_target{force=false package_id=lazy_static v1.5.0 target="lazy_static"}: cargo::core::compiler::fingerprint: fingerprint error for lazy_static v1.5.0/Check { test: false }/TargetInner { name_inferred: true, ..: lib_target("lazy_static", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\lazy_static-1.5.0\\src\\lib.rs", Edition2015) }
+   0.230909800s  INFO prepare_target{force=false package_id=lazy_static v1.5.0 target="lazy_static"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\lazy_static-be5337d421f9f3ba\lib-lazy_static`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_filter_source_repo
+  13: git_libgit2_prerelease
+  14: <unknown>
+  15: <unknown>
+  16: <unknown>
+  17: <unknown>
+  18: git_midx_writer_dump
+  19: git_filter_source_repo
+  20: git_midx_writer_dump
+  21: BaseThreadInitThunk
+  22: RtlUserThreadStart
+   0.231742100s  INFO prepare_target{force=false package_id=libc v0.2.182 target="libc"}: cargo::core::compiler::fingerprint: fingerprint error for libc v0.2.182/Check { test: false }/TargetInner { ..: lib_target("libc", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\libc-0.2.182\\src\\lib.rs", Edition2021) }
+   0.231786500s  INFO prepare_target{force=false package_id=libc v0.2.182 target="libc"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\libc-9cac64c0b9034bc8\lib-libc`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_filter_source_repo
+  13: git_libgit2_prerelease
+  14: <unknown>
+  15: <unknown>
+  16: <unknown>
+  17: <unknown>
+  18: git_midx_writer_dump
+  19: git_filter_source_repo
+  20: git_midx_writer_dump
+  21: BaseThreadInitThunk
+  22: RtlUserThreadStart
+   0.234551200s  INFO prepare_target{force=false package_id=fxhash v0.2.1 target="fxhash"}: cargo::core::compiler::fingerprint: fingerprint error for fxhash v0.2.1/Check { test: false }/TargetInner { ..: lib_target("fxhash", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\fxhash-0.2.1\\lib.rs", Edition2015) }
+   0.234596100s  INFO prepare_target{force=false package_id=fxhash v0.2.1 target="fxhash"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\fxhash-8350a077b66b46b2\lib-fxhash`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_libgit2_prerelease
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+  16: <unknown>
+  17: git_midx_writer_dump
+  18: git_filter_source_repo
+  19: git_midx_writer_dump
+  20: BaseThreadInitThunk
+  21: RtlUserThreadStart
+   0.235487300s  INFO prepare_target{force=false package_id=byteorder v1.5.0 target="byteorder"}: cargo::core::compiler::fingerprint: fingerprint error for byteorder v1.5.0/Check { test: false }/TargetInner { benched: false, ..: lib_target("byteorder", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\byteorder-1.5.0\\src\\lib.rs", Edition2021) }
+   0.235531200s  INFO prepare_target{force=false package_id=byteorder v1.5.0 target="byteorder"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\byteorder-4ee58ac63abd2ff9\lib-byteorder`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_filter_source_repo
+  13: git_libgit2_prerelease
+  14: <unknown>
+  15: <unknown>
+  16: <unknown>
+  17: <unknown>
+  18: git_midx_writer_dump
+  19: git_filter_source_repo
+  20: git_midx_writer_dump
+  21: BaseThreadInitThunk
+  22: RtlUserThreadStart
+   0.236427200s  INFO prepare_target{force=false package_id=itoa v1.0.17 target="itoa"}: cargo::core::compiler::fingerprint: fingerprint error for itoa v1.0.17/Check { test: false }/TargetInner { ..: lib_target("itoa", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\itoa-1.0.17\\src\\lib.rs", Edition2021) }
+   0.236468800s  INFO prepare_target{force=false package_id=itoa v1.0.17 target="itoa"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\itoa-380221fc244fa74f\lib-itoa`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_libgit2_prerelease
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+  16: <unknown>
+  17: git_midx_writer_dump
+  18: git_filter_source_repo
+  19: git_midx_writer_dump
+  20: BaseThreadInitThunk
+  21: RtlUserThreadStart
+   0.237352800s  INFO prepare_target{force=false package_id=mem_cleaner_common v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner_common) target="mem_cleaner_common"}: cargo::core::compiler::fingerprint: fingerprint error for mem_cleaner_common v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner_common)/Check { test: false }/TargetInner { name_inferred: true, ..: lib_target("mem_cleaner_common", ["lib"], "C:\\Users\\zcm\\Downloads\\mem-cleaner-EBPF\\mem_cleaner_common\\src\\lib.rs", Edition2021) }
+   0.237398800s  INFO prepare_target{force=false package_id=mem_cleaner_common v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner_common) target="mem_cleaner_common"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\mem_cleaner_common-57af711fd27bc038\lib-mem_cleaner_common`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_libgit2_prerelease
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+  16: <unknown>
+  17: git_midx_writer_dump
+  18: git_filter_source_repo
+  19: git_midx_writer_dump
+  20: BaseThreadInitThunk
+  21: RtlUserThreadStart
+   0.238291500s  INFO prepare_target{force=false package_id=nix v0.28.0 target="nix"}: cargo::core::compiler::fingerprint: fingerprint error for nix v0.28.0/Check { test: false }/TargetInner { name_inferred: true, ..: lib_target("nix", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\nix-0.28.0\\src\\lib.rs", Edition2021) }
+   0.238352000s  INFO prepare_target{force=false package_id=nix v0.28.0 target="nix"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\nix-bb68010b9fb2fa8d\lib-nix`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_libgit2_prerelease
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+  16: <unknown>
+  17: git_midx_writer_dump
+  18: git_filter_source_repo
+  19: git_midx_writer_dump
+  20: BaseThreadInitThunk
+  21: RtlUserThreadStart
+   0.241697500s  INFO prepare_target{force=false package_id=time v0.3.47 target="time"}: cargo::core::compiler::fingerprint: fingerprint error for time v0.3.47/Check { test: false }/TargetInner { benched: false, ..: lib_target("time", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\time-0.3.47\\src\\lib.rs", Edition2024) }
+   0.241782600s  INFO prepare_target{force=false package_id=time v0.3.47 target="time"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\time-aa98f3a4de618599\lib-time`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_libgit2_prerelease
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+  16: <unknown>
+  17: git_midx_writer_dump
+  18: git_filter_source_repo
+  19: git_midx_writer_dump
+  20: BaseThreadInitThunk
+  21: RtlUserThreadStart
+   0.243206700s  INFO prepare_target{force=false package_id=deranged v0.5.8 target="deranged"}: cargo::core::compiler::fingerprint: fingerprint error for deranged v0.5.8/Check { test: false }/TargetInner { ..: lib_target("deranged", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\deranged-0.5.8\\src\\lib.rs", Edition2021) }
+   0.243250000s  INFO prepare_target{force=false package_id=deranged v0.5.8 target="deranged"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\deranged-3cec574ebb58703f\lib-deranged`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_filter_source_repo
+  13: git_libgit2_prerelease
+  14: <unknown>
+  15: <unknown>
+  16: <unknown>
+  17: <unknown>
+  18: git_midx_writer_dump
+  19: git_filter_source_repo
+  20: git_midx_writer_dump
+  21: BaseThreadInitThunk
+  22: RtlUserThreadStart
+   0.244385000s  INFO prepare_target{force=false package_id=powerfmt v0.2.0 target="powerfmt"}: cargo::core::compiler::fingerprint: fingerprint error for powerfmt v0.2.0/Check { test: false }/TargetInner { name_inferred: true, ..: lib_target("powerfmt", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\powerfmt-0.2.0\\src\\lib.rs", Edition2021) }
+   0.244435300s  INFO prepare_target{force=false package_id=powerfmt v0.2.0 target="powerfmt"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\powerfmt-853dc3a7d220fd2f\lib-powerfmt`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_filter_source_repo
+  13: git_filter_source_repo
+  14: git_libgit2_prerelease
+  15: <unknown>
+  16: <unknown>
+  17: <unknown>
+  18: <unknown>
+  19: git_midx_writer_dump
+  20: git_filter_source_repo
+  21: git_midx_writer_dump
+  22: BaseThreadInitThunk
+  23: RtlUserThreadStart
+   0.245369400s  INFO prepare_target{force=false package_id=num-conv v0.2.0 target="num_conv"}: cargo::core::compiler::fingerprint: fingerprint error for num-conv v0.2.0/Check { test: false }/TargetInner { ..: lib_target("num_conv", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\num-conv-0.2.0\\src\\lib.rs", Edition2021) }
+   0.245409200s  INFO prepare_target{force=false package_id=num-conv v0.2.0 target="num_conv"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\num-conv-9ae3ea7f36545081\lib-num_conv`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_filter_source_repo
+  13: git_libgit2_prerelease
+  14: <unknown>
+  15: <unknown>
+  16: <unknown>
+  17: <unknown>
+  18: git_midx_writer_dump
+  19: git_filter_source_repo
+  20: git_midx_writer_dump
+  21: BaseThreadInitThunk
+  22: RtlUserThreadStart
+   0.246236000s  INFO prepare_target{force=false package_id=time-core v0.1.8 target="time_core"}: cargo::core::compiler::fingerprint: fingerprint error for time-core v0.1.8/Check { test: false }/TargetInner { ..: lib_target("time_core", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\time-core-0.1.8\\src\\lib.rs", Edition2024) }
+   0.246270600s  INFO prepare_target{force=false package_id=time-core v0.1.8 target="time_core"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\time-core-f07c53fd73734eb8\lib-time_core`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_filter_source_repo
+  13: git_libgit2_prerelease
+  14: <unknown>
+  15: <unknown>
+  16: <unknown>
+  17: <unknown>
+  18: git_midx_writer_dump
+  19: git_filter_source_repo
+  20: git_midx_writer_dump
+  21: BaseThreadInitThunk
+  22: RtlUserThreadStart
+   0.248487900s  INFO prepare_target{force=false package_id=tokio v1.49.0 target="tokio"}: cargo::core::compiler::fingerprint: fingerprint error for tokio v1.49.0/Check { test: false }/TargetInner { ..: lib_target("tokio", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\tokio-1.49.0\\src\\lib.rs", Edition2021) }
+   0.248529600s  INFO prepare_target{force=false package_id=tokio v1.49.0 target="tokio"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\tokio-c6f158fe9ecf192a\lib-tokio`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_libgit2_prerelease
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+  16: <unknown>
+  17: git_midx_writer_dump
+  18: git_filter_source_repo
+  19: git_midx_writer_dump
+  20: BaseThreadInitThunk
+  21: RtlUserThreadStart
+   0.249947700s  INFO prepare_target{force=false package_id=pin-project-lite v0.2.17 target="pin_project_lite"}: cargo::core::compiler::fingerprint: fingerprint error for pin-project-lite v0.2.17/Check { test: false }/TargetInner { doc_scrape_examples: Disabled, ..: lib_target("pin_project_lite", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\pin-project-lite-0.2.17\\src\\lib.rs", Edition2018) }
+   0.249996400s  INFO prepare_target{force=false package_id=pin-project-lite v0.2.17 target="pin_project_lite"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\pin-project-lite-8e269f70c50e6f50\lib-pin_project_lite`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_filter_source_repo
+  13: git_libgit2_prerelease
+  14: <unknown>
+  15: <unknown>
+  16: <unknown>
+  17: <unknown>
+  18: git_midx_writer_dump
+  19: git_filter_source_repo
+  20: git_midx_writer_dump
+  21: BaseThreadInitThunk
+  22: RtlUserThreadStart
+   0.251779500s  INFO prepare_target{force=false package_id=mem_cleaner v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner) target="mem_cleaner"}: cargo::core::compiler::fingerprint: fingerprint error for mem_cleaner v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner)/Check { test: true }/TargetInner { name: "mem_cleaner", doc: true, ..: with_path("C:\\Users\\zcm\\Downloads\\mem-cleaner-EBPF\\mem_cleaner\\src\\main.rs", Edition2021) }
+   0.251825000s  INFO prepare_target{force=false package_id=mem_cleaner v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner) target="mem_cleaner"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\mem_cleaner-3ca203d778420f13\test-bin-mem_cleaner`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_libgit2_prerelease
+  12: <unknown>
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+  16: git_midx_writer_dump
+  17: git_filter_source_repo
+  18: git_midx_writer_dump
+  19: BaseThreadInitThunk
+  20: RtlUserThreadStart
+   0.253566400s  INFO prepare_target{force=false package_id=mem_cleaner_common v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner_common) target="mem_cleaner_common"}: cargo::core::compiler::fingerprint: fingerprint error for mem_cleaner_common v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner_common)/Check { test: true }/TargetInner { name_inferred: true, ..: lib_target("mem_cleaner_common", ["lib"], "C:\\Users\\zcm\\Downloads\\mem-cleaner-EBPF\\mem_cleaner_common\\src\\lib.rs", Edition2021) }
+   0.253608100s  INFO prepare_target{force=false package_id=mem_cleaner_common v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner_common) target="mem_cleaner_common"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\mem_cleaner_common-948e29491bbc1721\test-lib-mem_cleaner_common`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_libgit2_prerelease
+  12: <unknown>
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+  16: git_midx_writer_dump
+  17: git_filter_source_repo
+  18: git_midx_writer_dump
+  19: BaseThreadInitThunk
+  20: RtlUserThreadStart
+   0.267984400s  INFO prepare_target{force=false package_id=mem_cleaner_ebpf v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner_ebpf) target="mem_cleaner_ebpf"}: cargo::core::compiler::fingerprint: fingerprint error for mem_cleaner_ebpf v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner_ebpf)/Check { test: false }/TargetInner { name: "mem_cleaner_ebpf", doc: true, ..: with_path("C:\\Users\\zcm\\Downloads\\mem-cleaner-EBPF\\mem_cleaner_ebpf\\src\\main.rs", Edition2021) }
+   0.268041300s  INFO prepare_target{force=false package_id=mem_cleaner_ebpf v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner_ebpf) target="mem_cleaner_ebpf"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\mem_cleaner_ebpf-6ab18d9e6eeb020a\bin-mem_cleaner_ebpf`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_libgit2_prerelease
+  12: <unknown>
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+  16: git_midx_writer_dump
+  17: git_filter_source_repo
+  18: git_midx_writer_dump
+  19: BaseThreadInitThunk
+  20: RtlUserThreadStart
+   0.269305100s  INFO prepare_target{force=false package_id=aya-ebpf v0.1.1 target="aya_ebpf"}: cargo::core::compiler::fingerprint: fingerprint error for aya-ebpf v0.1.1/Check { test: false }/TargetInner { ..: lib_target("aya_ebpf", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\aya-ebpf-0.1.1\\src\\lib.rs", Edition2021) }
+   0.269352800s  INFO prepare_target{force=false package_id=aya-ebpf v0.1.1 target="aya_ebpf"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\aya-ebpf-203619070d2c7a3d\lib-aya_ebpf`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_libgit2_prerelease
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+  16: <unknown>
+  17: git_midx_writer_dump
+  18: git_filter_source_repo
+  19: git_midx_writer_dump
+  20: BaseThreadInitThunk
+  21: RtlUserThreadStart
+   0.274393500s  INFO prepare_target{force=false package_id=aya-ebpf-bindings v0.1.2 target="aya_ebpf_bindings"}: cargo::core::compiler::fingerprint: fingerprint error for aya-ebpf-bindings v0.1.2/Check { test: false }/TargetInner { ..: lib_target("aya_ebpf_bindings", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\aya-ebpf-bindings-0.1.2\\src\\lib.rs", Edition2024) }
+   0.274448400s  INFO prepare_target{force=false package_id=aya-ebpf-bindings v0.1.2 target="aya_ebpf_bindings"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\aya-ebpf-bindings-60a7e31eb043a8b4\lib-aya_ebpf_bindings`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_filter_source_repo
+  13: git_libgit2_prerelease
+  14: <unknown>
+  15: <unknown>
+  16: <unknown>
+  17: <unknown>
+  18: git_midx_writer_dump
+  19: git_filter_source_repo
+  20: git_midx_writer_dump
+  21: BaseThreadInitThunk
+  22: RtlUserThreadStart
+   0.293187000s  INFO prepare_target{force=false package_id=aya-ebpf-cty v0.2.3 target="aya_ebpf_cty"}: cargo::core::compiler::fingerprint: fingerprint error for aya-ebpf-cty v0.2.3/Check { test: false }/TargetInner { ..: lib_target("aya_ebpf_cty", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\aya-ebpf-cty-0.2.3\\src\\lib.rs", Edition2024) }
+   0.293288100s  INFO prepare_target{force=false package_id=aya-ebpf-cty v0.2.3 target="aya_ebpf_cty"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\aya-ebpf-cty-9bc6124199efaa1f\lib-aya_ebpf_cty`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_filter_source_repo
+  12: git_filter_source_repo
+  13: git_filter_source_repo
+  14: git_libgit2_prerelease
+  15: <unknown>
+  16: <unknown>
+  17: <unknown>
+  18: <unknown>
+  19: git_midx_writer_dump
+  20: git_filter_source_repo
+  21: git_midx_writer_dump
+  22: BaseThreadInitThunk
+  23: RtlUserThreadStart
+   0.300202700s  INFO prepare_target{force=false package_id=mem_cleaner_ebpf v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner_ebpf) target="mem_cleaner_ebpf"}: cargo::core::compiler::fingerprint: fingerprint error for mem_cleaner_ebpf v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner_ebpf)/Check { test: true }/TargetInner { name: "mem_cleaner_ebpf", doc: true, ..: with_path("C:\\Users\\zcm\\Downloads\\mem-cleaner-EBPF\\mem_cleaner_ebpf\\src\\main.rs", Edition2021) }
+   0.300253100s  INFO prepare_target{force=false package_id=mem_cleaner_ebpf v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner_ebpf) target="mem_cleaner_ebpf"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\mem_cleaner_ebpf-082df5fa1accab13\test-bin-mem_cleaner_ebpf`
+
+Caused by:
+    系统找不到指定的文件。 (os error 2)
+
+Stack backtrace:
+   0: git_midx_writer_dump
+   1: git_midx_writer_dump
+   2: git_midx_writer_dump
+   3: git_midx_writer_dump
+   4: git_filter_source_repo
+   5: git_filter_source_repo
+   6: git_filter_source_repo
+   7: git_filter_source_repo
+   8: git_filter_source_repo
+   9: git_filter_source_repo
+  10: git_filter_source_repo
+  11: git_libgit2_prerelease
+  12: <unknown>
+  13: <unknown>
+  14: <unknown>
+  15: <unknown>
+  16: git_midx_writer_dump
+  17: git_filter_source_repo
+  18: git_midx_writer_dump
+  19: BaseThreadInitThunk
+  20: RtlUserThreadStart
+    Checking cfg-if v1.0.4
+    Checking zerocopy v0.8.40
+    Checking once_cell v1.21.3
+    Checking memchr v2.8.0
+    Checking allocator-api2 v0.2.21
+    Checking aya-ebpf-cty v0.2.3
+    Checking libc v0.2.182
+    Checking core-error v0.0.0
+    Checking thiserror v1.0.69
+    Checking mem_cleaner_common v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner_common)
+    Checking powerfmt v0.2.0
+    Checking bytes v1.11.1
+    Checking log v0.4.29
+    Checking bitflags v2.11.0
+    Checking aya-ebpf-bindings v0.1.2
+    Checking num-conv v0.2.0
+    Checking object v0.32.2
+    Checking deranged v0.5.8
+    Checking assert_matches v1.5.0
+    Checking lazy_static v1.5.0
+    Checking time-core v0.1.8
+    Checking itoa v1.0.17
+    Checking pin-project-lite v0.2.17
+    Checking byteorder v1.5.0
+    Checking aya-ebpf v0.1.1
+    Checking nix v0.28.0
+    Checking tokio v1.49.0
+    Checking fxhash v0.2.1
+error: could not compile `aya-ebpf` (lib) due to 20 previous errors
+warning: build failed, waiting for other jobs to finish...
+    Checking time v0.3.47
+    Checking ahash v0.8.12
+    Checking hashbrown v0.14.5
+    Checking aya-obj v0.1.0
+error: could not compile `aya-obj` (lib) due to 4 previous errors
