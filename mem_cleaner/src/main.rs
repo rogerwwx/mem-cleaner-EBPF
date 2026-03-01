@@ -1,7 +1,7 @@
 use aya::programs::TracePoint;
 use aya::Bpf;
 use aya::maps::RingBuf;
-use mem_cleaner_common::ProcessEvent;
+use mem_cleaner-common::ProcessEvent;
 
 use fxhash::FxHashSet;
 use nix::sys::signal::{kill, Signal};

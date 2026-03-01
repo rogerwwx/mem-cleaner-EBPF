@@ -6,7 +6,7 @@ use aya_ebpf::{
     maps::RingBuf,
     programs::TracePointContext,
 };
-use mem_cleaner_common::ProcessEvent;
+use mem_cleaner-common::ProcessEvent;
 
 // 定义 Ring Buffer (64KB 足够缓冲大量瞬间启动事件)
 #[map]
