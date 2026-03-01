@@ -8,12 +8,21 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ github.workspace }}
+
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
           path: .
+
+      - name: Debug Directory (确认目录结构)
+        run: |
+          pwd
+          ls -la
 
       # 1. 安装稳定版工具链 (用于编译 Android 用户态)
       - name: Install Stable Rust Toolchain
@@ -31,7 +40,6 @@ jobs:
       # 3. 使用 nightly 编译 eBPF (必须加 -Z build-std=core)
       - name: Build eBPF Kernel Program
         env:
-          # 核心技巧：通过环境变量临时给 eBPF 编译关闭 LTO，防止 bpf-linker 报错
           CARGO_PROFILE_RELEASE_LTO: "false"
         run: cargo +nightly build --target bpfel-unknown-none -Z build-std=core -p mem_cleaner-ebpf --release
 
@@ -42,7 +50,6 @@ jobs:
       - name: Build User-space Daemon for Android (aarch64)
         env:
           CROSS_NO_WARNINGS: 0
-          # 这里不覆盖 LTO，让它默认使用 Cargo.toml 里的 lto="fat" 极致压缩
         run: cross +stable build --target aarch64-linux-android -p mem_cleaner --release
 
       - name: Rename and Package Binary
