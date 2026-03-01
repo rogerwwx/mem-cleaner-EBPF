@@ -1,9 +1,0 @@
-[package]
-name = "mem_cleaner_ebpf"
-version = "0.2.0"
-edition = "2021"
-
-[dependencies]
-aya-ebpf = "0.1.0"
-# 这里必须显式引入刚才写的公共数据结构库
-mem_cleaner_common = { path = "../mem_cleaner_common" }
