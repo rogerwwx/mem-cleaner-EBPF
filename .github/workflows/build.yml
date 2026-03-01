@@ -12,32 +12,31 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      - name: Install Rust Toolchain
+      # 1. 安装稳定版工具链 (用于编译 Android 用户态)
+      - name: Install Stable Rust Toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          # 同时添加 Android 和 eBPF 两个编译目标
-          targets: aarch64-linux-android, bpfel-unknown-none
-          # eBPF 编译强依赖 rust-src 组件
-          components: rust-src
+          targets: aarch64-linux-android
 
-      - name: Install Cross (使用最新Git版以修复libunwind bug)
+      # 2. 手动安装 Nightly 工具链及 rust-src (专用于编译 eBPF)
+      - name: Install Nightly Toolchain for eBPF
+        run: rustup toolchain install nightly --component rust-src
+
+      - name: Install Cross
         run: cargo install cross --git https://github.com/cross-rs/cross
 
-      # --- 第一步：编译内核态 eBPF 字节码 ---
+      # 3. 使用 nightly 编译 eBPF (必须加 -Z build-std=core)
       - name: Build eBPF Kernel Program
-        # 注意：这里直接使用原生的 cargo，因为 eBPF 是纯净无依赖的 target，不需要 NDK
-        run: cargo build --target bpfel-unknown-none -p mem_cleaner-ebpf --release
+        run: cargo +nightly build --target bpfel-unknown-none -Z build-std=core -p mem_cleaner-ebpf --release
 
       - name: Verify eBPF Artifact
-        # 验证 eBPF 产物是否成功生成，以便下一步的 include_bytes! 宏能找到它
         run: ls -la target/bpfel-unknown-none/release/mem_cleaner-ebpf
 
-      # --- 第二步：编译用户态 Android 主程序 ---
+      # 4. 使用 stable 和 cross 编译 Android 主程序
       - name: Build User-space Daemon for Android (aarch64)
         env:
-          CROSS_NO_WARNINGS: 0 # 关闭新版 cross 烦人的警告报错机制
-        # 使用 cross 编译 Android 架构，会自动处理复杂的 NDK 链接问题
-        run: cross build --target aarch64-linux-android -p mem_cleaner --release
+          CROSS_NO_WARNINGS: 0
+        run: cross +stable build --target aarch64-linux-android -p mem_cleaner --release
 
       - name: Rename and Package Binary
         run: |

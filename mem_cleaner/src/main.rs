@@ -20,7 +20,7 @@ use time::{format_description::FormatItem, Date, OffsetDateTime};
 // --- 常量配置 ---
 const OOM_SCORE_THRESHOLD: i32 = 800; 
 const INIT_DELAY_SECS: u64 = 3;     // 短延迟：等待 AMS 下发 OOM Score 和改名
-const GRACE_PERIOD_SECS: u64 = 60;  // 长延迟：防抖观察期
+const DEFAULT_INTERVAL: u64 = 60;   // 默认观察期(可通过配置文件覆盖)
 
 // --- 结构体与白名单 ---
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -30,6 +30,7 @@ enum WhitelistRule {
 }
 
 struct AppConfig {
+    interval: u64, // 现在的 interval 代表“观察期/容忍期”
     whitelist: FxHashSet<WhitelistRule>,
 }
 
@@ -46,12 +47,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let log_path = if args.len() > 2 { Some(args[2].clone()) } else { None };
 
     println!("⚡ 正在初始化 eBPF 进程压制器 (Kernel 5.15) ⚡");
+    
+    // 加载配置，包含 interval 解析
     let config = Arc::new(load_config(config_path));
+    println!("⏱️  设置进程容忍观察期: {} 秒", config.interval);
+
     let mut logger = Logger::new(log_path);
     if let Some(l) = &mut logger { l.write_startup(); }
     let logger = Arc::new(Mutex::new(logger));
 
-    // 1. 动态加载 eBPF 字节码 (这里假设你按之前的命令编译了 ebpf 模块)
+    // 1. 动态加载 eBPF 字节码
     let bpf_bytes = include_bytes!("../../target/bpfel-unknown-none/release/mem_cleaner-ebpf");
     let mut bpf = Bpf::load(bpf_bytes)?;
 
@@ -71,7 +76,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 4. 异步无阻塞事件循环
     loop {
-        // 没有进程启动时，这里完全休眠，0 CPU 占用
         let Some(item) = ring_buf.next().await else { continue };
         let event = unsafe { std::ptr::read_unaligned(item.as_ptr() as *const ProcessEvent) };
 
@@ -86,14 +90,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 }
 
-/// 核心逻辑：双重延迟状态机 (防频繁重启耗电)
+/// 核心逻辑：双重延迟状态机
 async fn handle_new_process(
     pid: u32, 
     tracking: Arc<Mutex<FxHashSet<u32>>>, 
     config: Arc<AppConfig>,
     logger: Arc<Mutex<Option<Logger>>>,
 ) {
-    // 查重
+    // 查重：防止同一个 PID 触发多个并行观察任务
     {
         let mut t = tracking.lock().await;
         if t.contains(&pid) { return; }
@@ -118,11 +122,11 @@ async fn handle_new_process(
     }
 
     // ==========================================
-    // 阶段 2：长延迟观察期
+    // 阶段 2：长延迟观察期 (使用配置文件中的 interval)
     // ==========================================
-    sleep(Duration::from_secs(GRACE_PERIOD_SECS)).await;
+    sleep(Duration::from_secs(config.interval)).await;
 
-    // 终极检查：过了 60 秒依然赖在后台？
+    // 终极检查：过了 interval 秒依然赖在后台？
     let final_score = get_oom_score(pid);
     if final_score >= OOM_SCORE_THRESHOLD {
         if kill(Pid::from_raw(pid as i32), Signal::SIGKILL).is_ok() {
@@ -178,10 +182,13 @@ fn is_in_whitelist(cmdline: &str, whitelist: &FxHashSet<WhitelistRule>) -> bool 
     false
 }
 
-// --- 配置与日志 (保留原样) ---
+// --- 配置与日志 ---
 
 fn load_config(path: &str) -> AppConfig {
+    let mut interval = DEFAULT_INTERVAL;
     let mut whitelist: FxHashSet<WhitelistRule> = FxHashSet::default();
+    
+    // 默认白名单
     whitelist.insert(WhitelistRule::Exact("com.android.systemui".to_string()));
     whitelist.insert(WhitelistRule::Exact("android".to_string()));
     whitelist.insert(WhitelistRule::Exact("com.android.phone".to_string()));
@@ -192,7 +199,15 @@ fn load_config(path: &str) -> AppConfig {
             let line = line.trim();
             if line.is_empty() || line.starts_with('#') { continue; }
 
-            if line.starts_with("whitelist:") {
+            // 解析 interval: xxx
+            if line.starts_with("interval:") {
+                if let Some(val_part) = line.split(':').nth(1) {
+                    if let Ok(val) = val_part.trim().parse::<u64>() {
+                        interval = val;
+                    }
+                }
+                in_whitelist_mode = false;
+            } else if line.starts_with("whitelist:") {
                 in_whitelist_mode = true;
                 if let Some(val_part) = line.split(':').nth(1) {
                     parse_whitelist_rules(val_part, &mut whitelist);
@@ -203,7 +218,7 @@ fn load_config(path: &str) -> AppConfig {
         }
     }
 
-    AppConfig { whitelist }
+    AppConfig { interval, whitelist }
 }
 
 fn parse_whitelist_rules(line: &str, whitelist: &mut FxHashSet<WhitelistRule>) {
