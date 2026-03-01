@@ -3,13 +3,14 @@
 
 use aya_ebpf::{
     macros::{map, tracepoint},
-    maps::RingBuf,
+    maps::PerfEventArray,
     programs::TracePointContext,
 };
 use mem_cleaner_common::ProcessEvent;
 
+// 使用 PerfEventArray 替代 RingBuf，完美兼容异步 Tokio
 #[map]
-static EVENTS: RingBuf = RingBuf::with_byte_size(64 * 1024, 0);
+static EVENTS: PerfEventArray<ProcessEvent> = PerfEventArray::new(0);
 
 #[tracepoint]
 pub fn trace_setresuid(ctx: TracePointContext) -> u32 {
@@ -20,7 +21,6 @@ pub fn trace_setresuid(ctx: TracePointContext) -> u32 {
 }
 
 fn try_trace_setresuid(ctx: TracePointContext) -> Result<u32, u32> {
-    // 64位系统调用参数从偏移量16开始。必须明确指定读取类型 <u32>
     let ruid = match unsafe { ctx.read_at::<u32>(16) } {
         Ok(v) => v,
         Err(_) => return Ok(0),
@@ -33,13 +33,10 @@ fn try_trace_setresuid(ctx: TracePointContext) -> Result<u32, u32> {
     let pid_tgid = aya_ebpf::helpers::bpf_get_current_pid_tgid();
     let pid = (pid_tgid >> 32) as u32;
 
-    if let Some(mut buf) = EVENTS.reserve::<ProcessEvent>(0) {
-        unsafe {
-            (*buf.as_mut_ptr()).pid = pid;
-            (*buf.as_mut_ptr()).uid = ruid;
-        }
-        buf.submit(0);
-    }
+    let event = ProcessEvent { pid, uid: ruid };
+
+    // 一行代码直接输出到用户态，无需手动 reserve 和 submit
+    EVENTS.output(&ctx, &event, 0);
 
     Ok(0)
 }
