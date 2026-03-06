@@ -13,11 +13,10 @@ use tokio::time::{sleep, Duration};
 
 use std::env;
 use std::fs::{self, File, OpenOptions};
-use std::io::{BufRead, BufReader, BufWriter, Write};
+use std::io::Read;
 use std::os::unix::fs::MetadataExt;
 use std::process::Command;
 use std::sync::Arc;
-use std::io::Read
 
 use time::macros::format_description;
 use time::{format_description::FormatItem, Date, OffsetDateTime};
@@ -268,7 +267,7 @@ async fn start_monitor_loop(
 // 过滤线程，避免重复处理
 fn is_process_leader(pid: u32) -> bool {
     let path = format!("/proc/{}/status", pid);
-    
+
     // 打开文件，如果失败直接视为不是 Leader (可能进程刚退出)
     let mut file = match File::open(&path) {
         Ok(f) => f,
@@ -280,21 +279,24 @@ fn is_process_leader(pid: u32) -> bool {
         let valid_data = &buffer[..count];
         for i in 0..valid_data.len().saturating_sub(5) {
             // 快速匹配 "Tgid:" (5个字节)
-            if valid_data[i] == b'T' && &valid_data[i..i+5] == b"Tgid:" {
+            if valid_data[i] == b'T' && &valid_data[i..i + 5] == b"Tgid:" {
                 // 找到了！现在跳过后面的空白字符 (\t 或 空格)
                 let mut num_start = i + 5;
-                while num_start < valid_data.len() && 
-                      (valid_data[num_start] == b'\t' || valid_data[num_start] == b' ') {
+                while num_start < valid_data.len()
+                    && (valid_data[num_start] == b'\t' || valid_data[num_start] == b' ')
+                {
                     num_start += 1;
                 }
-                
+
                 // 开始解析数字
                 let mut num_end = num_start;
-                while num_end < valid_data.len() && 
-                      valid_data[num_end] >= b'0' && valid_data[num_end] <= b'9' {
+                while num_end < valid_data.len()
+                    && valid_data[num_end] >= b'0'
+                    && valid_data[num_end] <= b'9'
+                {
                     num_end += 1;
                 }
-                
+
                 // 将字节切片转为字符串 (这里肯定是纯数字，unwrap 安全)
                 if let Ok(tgid_str) = std::str::from_utf8(&valid_data[num_start..num_end]) {
                     if let Ok(tgid) = tgid_str.parse::<u32>() {
@@ -305,8 +307,8 @@ fn is_process_leader(pid: u32) -> bool {
             }
         }
     }
-    
-    false 
+
+    false
 }
 
 fn get_process_uid(pid: u32) -> Option<u32> {
