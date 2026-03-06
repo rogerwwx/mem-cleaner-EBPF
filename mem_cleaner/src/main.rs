@@ -26,7 +26,7 @@ const OOM_SCORE_THRESHOLD: i32 = 800; // OOM 分数阈值 (>=800 视为后台缓
 const INIT_DELAY_SECS: u64 = 2; // 等待 Zygote 变身为 App 的时间 (设为 2 秒更稳妥)
 const DEFAULT_INTERVAL: u64 = 30; // 默认轮询检查间隔
 const MIN_APP_UID: u32 = 10000; // Android App 的最小 UID
-const DOZE_PAUSE_SECS: u64 = 300; // Doze 模式下暂停监控的时长
+const DOZE_PAUSE_SECS: u64 = 60; // Doze 模式下暂停监控的时长
 
 // Doze 检测命令
 const DOZE_CHECK_CMD: &str = "deviceidle";
@@ -308,16 +308,6 @@ fn is_in_whitelist(cmdline: &str, whitelist: &FxHashSet<WhitelistRule>) -> bool 
 fn load_config(path: &str) -> AppConfig {
     let mut interval = DEFAULT_INTERVAL;
     let mut whitelist: FxHashSet<WhitelistRule> = FxHashSet::default();
-
-    // 默认白名单 (防止杀崩系统)
-    whitelist.insert(WhitelistRule::Exact("com.android.systemui".to_string()));
-    whitelist.insert(WhitelistRule::Prefix("com.android.launcher".to_string())); // 各种原生桌面
-    whitelist.insert(WhitelistRule::Prefix("com.miui.home".to_string())); // 小米桌面
-    whitelist.insert(WhitelistRule::Prefix(
-        "com.huawei.android.launcher".to_string(),
-    )); // 华为桌面
-    whitelist.insert(WhitelistRule::Prefix("com.oppo.launcher".to_string())); // OPPO 桌面
-    whitelist.insert(WhitelistRule::Prefix("com.bbk.launcher2".to_string())); // Vivo 桌面
 
     if let Ok(content) = fs::read_to_string(path) {
         let mut in_whitelist_mode = false;
