@@ -43,15 +43,24 @@ jobs:
             --release
 
       # 验证一下文件类型，如果是 "ELF 64-bit LSB eBPF"，那就对了
+# ... (前面 1-5 步不变) ...
+
       - name: Verify eBPF Artifact
         run: file target/bpfel-unknown-none/release/mem_cleaner_ebpf
 
+      # 🔥 【新增步骤】强制把 eBPF 文件塞进 src 目录，绕过 Cross 的 target 隔离！
+      - name: Copy eBPF Object to Src
+        run: |
+          cp target/bpfel-unknown-none/release/mem_cleaner_ebpf mem_cleaner/src/mem_cleaner_ebpf.o
+          ls -la mem_cleaner/src/mem_cleaner_ebpf.o
+
       # 6. 使用 stable 和 cross 编译 Android 主程序
-      # 注意：Cross 会挂载当前目录，所以 target 目录下的 ebpf 文件是可见的
       - name: Build User-space Daemon for Android (aarch64)
         env:
           CROSS_NO_WARNINGS: 0
         run: cross +stable build --target aarch64-linux-android -p mem_cleaner --release
+
+      # ... (后面重命名和上传产物的步骤不变) ...
 
       - name: Rename and Package Binary
         run: |

@@ -82,8 +82,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
     }
 
-    let bpf_bytes = include_bytes!("../../target/bpfel-unknown-none/release/mem_cleaner_ebpf");
-    let mut bpf = Bpf::load(bpf_bytes)?;
+    println!("🎧 准备加载 eBPF 字节码...");
+
+    // 1. 强制 8 字节对齐的 Wrapper 结构体
+    #[repr(C, align(8))]
+    struct AlignedBpf([u8; include_bytes!("mem_cleaner_ebpf.o").len()]);
+
+    // 2. 从【当前 src 目录】读取 eBPF 文件，绝对不要再去 ../../target 读取！
+    static BPF_BYTES: AlignedBpf = AlignedBpf(*include_bytes!("mem_cleaner_ebpf.o"));
+
+    // 3. 打印大小，用于运行时校验（如果打印出来是几百字节，说明读错文件了；正常应该有几KB）
+    println!("📦 成功读取 eBPF 文件，大小: {} bytes", BPF_BYTES.0.len());
+
+    // 4. 加载到内核
+    let mut bpf = Bpf::load(&BPF_BYTES.0)?;
 
     let program: &mut TracePoint = bpf.program_mut("sched_process_exec").unwrap().try_into()?;
     program.load()?;
