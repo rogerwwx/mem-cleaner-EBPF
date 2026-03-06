@@ -14,7 +14,6 @@ use tokio::time::{sleep, Duration};
 use std::env;
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufWriter, Write};
-// 必须引入这个 trait 才能获取 uid
 use std::os::unix::fs::MetadataExt;
 use std::process::Command;
 use std::sync::Arc;
@@ -22,16 +21,21 @@ use std::sync::Arc;
 use time::macros::format_description;
 use time::{format_description::FormatItem, Date, OffsetDateTime};
 
-// 原有的常量
-const OOM_SCORE_THRESHOLD: i32 = 800;
-const INIT_DELAY_SECS: u64 = 1;
-const DEFAULT_INTERVAL: u64 = 60;
-const MIN_APP_UID: u32 = 10000;
+// === 配置常量 ===
+const OOM_SCORE_THRESHOLD: i32 = 800; // OOM 分数阈值 (>=800 视为后台缓存进程)
+const INIT_DELAY_SECS: u64 = 2; // 等待 Zygote 变身为 App 的时间 (设为 2 秒更稳妥)
+const DEFAULT_INTERVAL: u64 = 30; // 默认轮询检查间隔
+const MIN_APP_UID: u32 = 10000; // Android App 的最小 UID
+const DOZE_PAUSE_SECS: u64 = 300; // Doze 模式下暂停监控的时长
 
-// === 新增 Doze 相关配置 ===
-const DOZE_PAUSE_SECS: u64 = 300;
+// Doze 检测命令
 const DOZE_CHECK_CMD: &str = "deviceidle";
 const DOZE_CHECK_ARGS: &[&str] = &["get", "deep"];
+
+// 强制 ARM64 8字节对齐，防止 load 崩溃 (核心修复)
+#[repr(C, align(8))]
+struct AlignedBpf([u8; include_bytes!("mem_cleaner_ebpf.o").len()]);
+static BPF_BYTES: AlignedBpf = AlignedBpf(*include_bytes!("mem_cleaner_ebpf.o"));
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 enum WhitelistRule {
@@ -59,10 +63,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         None
     };
 
-    println!("⚡ 正在初始化 eBPF 进程压制器 (Kernel 5.15) ⚡");
+    println!("⚡ 初始化 Android 进程压制器 (Fork 监听版) ⚡");
 
     let config = Arc::new(load_config(config_path));
-    println!("⏱️  设置全局轮询扫描周期: {} 秒", config.interval);
+    println!(
+        "⏱️  监控间隔: {}s | 白名单规则数: {}",
+        config.interval,
+        config.whitelist.len()
+    );
 
     let mut logger = Logger::new(log_path);
     if let Some(l) = &mut logger {
@@ -70,9 +78,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let logger = Arc::new(Mutex::new(logger));
 
+    // 监控集合：存放所有待查杀的 App PID
     let monitoring_pids = Arc::new(Mutex::new(FxHashSet::default()));
 
-    // 启动全局轮询监控任务
+    // --- 启动后台轮询监控 (Consumer) ---
     {
         let mon_pids = monitoring_pids.clone();
         let mon_cfg = config.clone();
@@ -82,30 +91,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
     }
 
-    println!("🎧 准备加载 eBPF 字节码...");
-
-    // 1. 强制 8 字节对齐的 Wrapper 结构体
-    #[repr(C, align(8))]
-    struct AlignedBpf([u8; include_bytes!("mem_cleaner_ebpf.o").len()]);
-
-    // 2. 从【当前 src 目录】读取 eBPF 文件，绝对不要再去 ../../target 读取！
-    static BPF_BYTES: AlignedBpf = AlignedBpf(*include_bytes!("mem_cleaner_ebpf.o"));
-
-    // 3. 打印大小，用于运行时校验（如果打印出来是几百字节，说明读错文件了；正常应该有几KB）
-    println!("📦 成功读取 eBPF 文件，大小: {} bytes", BPF_BYTES.0.len());
-
-    // 4. 加载到内核
+    // --- 加载 eBPF ---
+    println!("📦 加载 eBPF 模块 (大小: {} bytes)...", BPF_BYTES.0.len());
     let mut bpf = Bpf::load(&BPF_BYTES.0)?;
 
-    let program: &mut TracePoint = bpf.program_mut("sched_process_exec").unwrap().try_into()?;
+    // 挂载 sched_process_fork
+    let program: &mut TracePoint = bpf.program_mut("sched_process_fork").unwrap().try_into()?;
     program.load()?;
-    program.attach("sched", "sched_process_exec")?;
-    println!("✅ eBPF Tracepoint 挂载成功!");
+    program.attach("sched", "sched_process_fork")?;
+    println!("✅ eBPF 挂载成功: 监听 Zygote Fork 事件");
 
     let mut perf_array = AsyncPerfEventArray::try_from(bpf.take_map("EVENTS").unwrap())?;
 
-    println!("🎧 进入极低功耗事件监听模式 (UID过滤已开启)...");
+    println!("🎧 服务已就绪，等待 App 启动...");
 
+    // --- 启动事件监听 (Producer) ---
     for cpu_id in online_cpus()? {
         let mut buf = perf_array.open(cpu_id, None)?;
         let pids_guard = monitoring_pids.clone();
@@ -129,59 +129,75 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let t = pids_guard.clone();
                     let c = cfg.clone();
 
+                    // 每一个 Fork 事件都启动一个异步任务去处理
                     tokio::spawn(async move {
-                        register_new_process(event.pid, t, c).await;
+                        handle_fork_event(event.pid, t, c).await;
                     });
                 }
             }
         });
     }
 
+    // 主线程保活
     loop {
         sleep(Duration::from_secs(3600)).await;
     }
 }
 
-async fn register_new_process(
+// === 处理 Fork 事件 ===
+async fn handle_fork_event(
     pid: u32,
     monitoring_pids: Arc<Mutex<FxHashSet<u32>>>,
     config: Arc<AppConfig>,
 ) {
+    // 关键步骤：等待 Zygote 进程特化 (Specialize)
+    // 刚 fork 出来的瞬间，PID 的名字叫 "zygote"，UID 是 0
+    // 我们睡 2 秒，等 Android 系统把它变成 "com.example.app"，UID 变成 10xxx
     sleep(Duration::from_secs(INIT_DELAY_SECS)).await;
 
-    // 1. UID 过滤
+    // 1. 检查 UID：如果是系统进程 (<10000)，直接忽略
     match get_process_uid(pid) {
         Some(uid) if uid < MIN_APP_UID => return,
-        None => return,
+        None => return, // 进程可能启动失败直接退出了
         _ => {}
     }
 
-    // 2. Cmdline 检查和白名单
+    // 2. 获取包名 (cmdline)
     let cmdline = get_cmdline(pid);
-    if cmdline.is_empty() || !cmdline.contains(':') || is_in_whitelist(&cmdline, &config.whitelist)
-    {
+    if cmdline.is_empty() {
         return;
     }
 
-    // 3. 加入监控列表
+    // 3. 检查白名单
+    if is_in_whitelist(&cmdline, &config.whitelist) {
+        // println!("🛡️ 白名单应用: {} (PID: {})", cmdline, pid);
+        return;
+    }
+
+    // 4. 加入监控列表
+    // println!("➕ 发现目标应用: {} (PID: {}) - 加入监控", cmdline, pid);
     let mut pids = monitoring_pids.lock().await;
     pids.insert(pid);
 }
 
+// === 后台监控循环 ===
 async fn start_monitor_loop(
     monitoring_pids: Arc<Mutex<FxHashSet<u32>>>,
     config: Arc<AppConfig>,
     logger: Arc<Mutex<Option<Logger>>>,
 ) {
     loop {
-        // --- Doze 检测 ---
+        // 1. 检测 Doze 模式
         if is_in_deep_doze() {
+            // println!("💤 Doze 模式生效，暂停监控...");
             sleep(Duration::from_secs(DOZE_PAUSE_SECS)).await;
             continue;
         }
 
+        // 2. 常规等待
         sleep(Duration::from_secs(config.interval)).await;
 
+        // 3. 检查监控列表
         let pids_to_check: Vec<u32> = {
             let pids = monitoring_pids.lock().await;
             pids.iter().cloned().collect()
@@ -194,15 +210,23 @@ async fn start_monitor_loop(
         let mut pids_to_remove = Vec::new();
 
         for pid in pids_to_check {
+            // 存活检查
             let cmdline = get_cmdline(pid);
             if cmdline.is_empty() {
-                pids_to_remove.push(pid);
+                pids_to_remove.push(pid); // 进程已死
                 continue;
             }
 
+            // OOM 检查
             let score = get_oom_score(pid);
 
+            // 只有当分数 >= 800 (进入 Cached/后台状态) 时才杀
             if score >= OOM_SCORE_THRESHOLD {
+                println!(
+                    "🔪 查杀后台进程: {} | OOM: {} | PID: {}",
+                    cmdline, score, pid
+                );
+
                 if kill(Pid::from_raw(pid as i32), Signal::SIGKILL).is_ok() {
                     let mut log_guard = logger.lock().await;
                     if let Some(l) = log_guard.as_mut() {
@@ -215,6 +239,7 @@ async fn start_monitor_loop(
             }
         }
 
+        // 清理死掉的进程
         if !pids_to_remove.is_empty() {
             let mut pids = monitoring_pids.lock().await;
             for pid in pids_to_remove {
@@ -224,11 +249,8 @@ async fn start_monitor_loop(
     }
 }
 
-// ==========================================
-// ⬇️⬇️⬇️ 缺失的辅助函数在这里 ⬇️⬇️⬇️
-// ==========================================
+// === 辅助函数 ===
 
-/// 获取进程 UID 的辅助函数
 fn get_process_uid(pid: u32) -> Option<u32> {
     let path = format!("/proc/{}", pid);
     fs::metadata(path).ok().map(|m| m.uid())
@@ -244,6 +266,17 @@ fn get_oom_score(pid: u32) -> i32 {
     -1000
 }
 
+fn get_cmdline(pid: u32) -> String {
+    let path = format!("/proc/{}/cmdline", pid);
+    if let Ok(content) = fs::read(&path) {
+        // Android cmdline 通常以 \0 分隔，我们只取第一段作为包名
+        if let Some(slice) = content.split(|&c| c == 0).next() {
+            return String::from_utf8_lossy(slice).into_owned();
+        }
+    }
+    String::new()
+}
+
 fn is_in_deep_doze() -> bool {
     if let Ok(output) = Command::new("cmd")
         .arg(DOZE_CHECK_CMD)
@@ -256,20 +289,12 @@ fn is_in_deep_doze() -> bool {
     false
 }
 
-fn get_cmdline(pid: u32) -> String {
-    let path = format!("/proc/{}/cmdline", pid);
-    if let Ok(content) = fs::read(&path) {
-        if let Some(slice) = content.split(|&c| c == 0).next() {
-            return String::from_utf8_lossy(slice).into_owned();
-        }
-    }
-    String::new()
-}
-
 fn is_in_whitelist(cmdline: &str, whitelist: &FxHashSet<WhitelistRule>) -> bool {
+    // 1. 精确匹配
     if whitelist.contains(&WhitelistRule::Exact(cmdline.to_string())) {
         return true;
     }
+    // 2. 前缀匹配
     for rule in whitelist {
         if let WhitelistRule::Prefix(prefix) = rule {
             if cmdline.starts_with(prefix) {
@@ -280,17 +305,19 @@ fn is_in_whitelist(cmdline: &str, whitelist: &FxHashSet<WhitelistRule>) -> bool 
     false
 }
 
-// ==========================================
-// ⬆️⬆️⬆️ 缺失的辅助函数在这里 ⬆️⬆️⬆️
-// ==========================================
-
 fn load_config(path: &str) -> AppConfig {
     let mut interval = DEFAULT_INTERVAL;
     let mut whitelist: FxHashSet<WhitelistRule> = FxHashSet::default();
 
+    // 默认白名单 (防止杀崩系统)
     whitelist.insert(WhitelistRule::Exact("com.android.systemui".to_string()));
-    whitelist.insert(WhitelistRule::Exact("android".to_string()));
-    whitelist.insert(WhitelistRule::Exact("com.android.phone".to_string()));
+    whitelist.insert(WhitelistRule::Prefix("com.android.launcher".to_string())); // 各种原生桌面
+    whitelist.insert(WhitelistRule::Prefix("com.miui.home".to_string())); // 小米桌面
+    whitelist.insert(WhitelistRule::Prefix(
+        "com.huawei.android.launcher".to_string(),
+    )); // 华为桌面
+    whitelist.insert(WhitelistRule::Prefix("com.oppo.launcher".to_string())); // OPPO 桌面
+    whitelist.insert(WhitelistRule::Prefix("com.bbk.launcher2".to_string())); // Vivo 桌面
 
     if let Ok(content) = fs::read_to_string(path) {
         let mut in_whitelist_mode = false;
@@ -337,6 +364,7 @@ fn parse_whitelist_rules(line: &str, whitelist: &mut FxHashSet<WhitelistRule>) {
     }
 }
 
+// --- 日志模块 (保持简洁) ---
 static TIME_FMT: &[FormatItem<'static>] =
     format_description!("[year]-[month]-[day] [hour]:[minute]:[second]");
 
