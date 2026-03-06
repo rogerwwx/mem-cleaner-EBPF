@@ -233,6 +233,45 @@ async fn start_monitor_loop(
     }
 }
 
+// === 辅助函数 ===
+
+fn get_process_uid(pid: u32) -> Option<u32> {
+    let path = format!("/proc/{}", pid);
+    fs::metadata(path).ok().map(|m| m.uid())
+}
+
+fn get_oom_score(pid: u32) -> i32 {
+    let path = format!("/proc/{}/oom_score_adj", pid);
+    if let Ok(content) = fs::read_to_string(&path) {
+        if let Ok(score) = content.trim().parse::<i32>() {
+            return score;
+        }
+    }
+    -1000
+}
+
+fn get_cmdline(pid: u32) -> String {
+    let path = format!("/proc/{}/cmdline", pid);
+    if let Ok(content) = fs::read(&path) {
+        if let Some(slice) = content.split(|&c| c == 0).next() {
+            return String::from_utf8_lossy(slice).into_owned();
+        }
+    }
+    String::new()
+}
+
+fn is_in_deep_doze() -> bool {
+    if let Ok(output) = Command::new("cmd")
+        .arg(DOZE_CHECK_CMD)
+        .args(DOZE_CHECK_ARGS)
+        .output()
+    {
+        let output_str = String::from_utf8_lossy(&output.stdout);
+        return output_str.trim() == "IDLE";
+    }
+    false
+}
+
 fn is_in_whitelist(cmdline: &str, whitelist: &FxHashSet<WhitelistRule>) -> bool {
     if whitelist.contains(&WhitelistRule::Exact(cmdline.to_string())) {
         return true;
@@ -355,7 +394,7 @@ impl Logger {
     fn write_startup(&mut self) {
         if let Some(mut writer) = self.open_writer() {
             let _ = writeln!(writer, "=== 启动时间: {} ===", now_fmt());
-            let _ = writeln!(writer, "⚡ eBPF 进程压制已启动 ⚡\n");
+            let _ = writeln!(writer, "⚡ eBPF 进程压制 (UID安全版) 已启动 ⚡\n");
         }
     }
 
