@@ -14,7 +14,6 @@ use tokio::time::{sleep, Duration};
 use std::env;
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufWriter, Write};
-// 引入 MetadataExt 以获取 UID
 use std::os::unix::fs::MetadataExt;
 use std::process::Command;
 use std::sync::Arc;
@@ -24,13 +23,14 @@ use time::{format_description::FormatItem, Date, OffsetDateTime};
 
 // === 配置常量 ===
 const OOM_SCORE_THRESHOLD: i32 = 800;
-const INIT_DELAY_SECS: u64 = 3; // 等待 Specialize
+const INIT_DELAY_SECS: u64 = 2;
 const DEFAULT_INTERVAL: u64 = 30;
-const MIN_APP_UID: u32 = 10000; // < 10000 均为系统进程，严禁查杀
-const DOZE_PAUSE_SECS: u64 = 60;
+const MIN_APP_UID: u32 = 10000;
+const DOZE_PAUSE_SECS: u64 = 300;
 const DOZE_CHECK_CMD: &str = "deviceidle";
 const DOZE_CHECK_ARGS: &[&str] = &["get", "deep"];
 
+// 强制对齐
 #[repr(C, align(8))]
 struct AlignedBpf([u8; include_bytes!("mem_cleaner_ebpf.o").len()]);
 static BPF_BYTES: AlignedBpf = AlignedBpf(*include_bytes!("mem_cleaner_ebpf.o"));
@@ -61,7 +61,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         None
     };
 
-    println!("⚡ 初始化 Android 进程压制器 (UID安全防护版) ⚡");
+    println!("⚡ 初始化 Android 子进程压制器 (主进程保护版) ⚡");
 
     let config = Arc::new(load_config(config_path));
 
@@ -73,7 +73,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let monitoring_pids = Arc::new(Mutex::new(FxHashSet::default()));
 
-    // 启动后台轮询监控
+    // 启动后台轮询
     {
         let mon_pids = monitoring_pids.clone();
         let mon_cfg = config.clone();
@@ -83,19 +83,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
     }
 
-    // 加载 eBPF
     println!("📦 加载 eBPF 模块 (大小: {} bytes)...", BPF_BYTES.0.len());
     let mut bpf = Bpf::load(&BPF_BYTES.0)?;
 
-    // 挂载 sched_process_fork
     let program: &mut TracePoint = bpf.program_mut("sched_process_fork").unwrap().try_into()?;
     program.load()?;
     program.attach("sched", "sched_process_fork")?;
-    println!("✅ eBPF 挂载成功: 监听进程创建");
+    println!("✅ eBPF 挂载成功: 监听进程 Fork");
 
     let mut perf_array = AsyncPerfEventArray::try_from(bpf.take_map("EVENTS").unwrap())?;
 
-    println!("🎧 服务已就绪，安全阀已开启 (UID >= 10000)...");
+    println!("🎧 服务已就绪，仅监控带有 ':' 的子进程...");
 
     for cpu_id in online_cpus()? {
         let mut buf = perf_array.open(cpu_id, None)?;
@@ -133,39 +131,53 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 }
 
-// === 处理 Fork 事件 (入库检查) ===
+// === 处理 Fork 事件 (筛选阶段) ===
 async fn handle_fork_event(
     pid: u32,
     monitoring_pids: Arc<Mutex<FxHashSet<u32>>>,
     config: Arc<AppConfig>,
 ) {
-    // 等待 Zygote 特化
     sleep(Duration::from_secs(INIT_DELAY_SECS)).await;
 
-    // 1. UID 检查：系统进程直接忽略
+    // 1. 系统进程过滤
     match get_process_uid(pid) {
         Some(uid) if uid < MIN_APP_UID => return,
         None => return,
         _ => {}
     }
 
-    // 2. cmdline 检查：过滤掉 zygote 和空进程名
     let cmdline = get_cmdline(pid);
-    if cmdline.is_empty() || cmdline == "zygote" {
+
+    // 2. 基础过滤：排除空名、zygote
+    if cmdline.is_empty()
+        || cmdline == "zygote"
+        || cmdline == "zygote64"
+        || cmdline == "<pre-initialized>"
+    {
         return;
     }
 
-    // 3. 白名单检查
+    // 3. 🔥🔥🔥 核心：主进程保护 🔥🔥🔥
+    // Android 规范：
+    // - 主进程名 = "com.example.app" (无冒号)
+    // - 子进程名 = "com.example.app:push" (有冒号)
+    // 我们的目标是：只杀子进程。所以如果不包含冒号，视为“良民主进程”，直接忽略。
+    if !cmdline.contains(':') {
+        // println!("🛡️ 忽略主进程: {} (PID: {})", cmdline, pid);
+        return;
+    }
+
+    // 4. 白名单检查 (针对某些必要的子进程，如 :channel)
     if is_in_whitelist(&cmdline, &config.whitelist) {
         return;
     }
 
-    // 4. 加入监控集合
+    // println!("➕ 监控子进程: {} (PID: {})", cmdline, pid);
     let mut pids = monitoring_pids.lock().await;
     pids.insert(pid);
 }
 
-// === 后台监控循环 (轻量 UID 二次检查) ===
+// === 后台监控循环 (执行阶段) ===
 async fn start_monitor_loop(
     monitoring_pids: Arc<Mutex<FxHashSet<u32>>>,
     config: Arc<AppConfig>,
@@ -189,9 +201,11 @@ async fn start_monitor_loop(
         }
 
         let mut pids_to_remove = Vec::new();
+        // 本轮被杀死的进程列表，用于合并日志
+        let mut killed_in_this_round = Vec::new();
 
         for pid in pids_to_check {
-            // 轻量 UID 检查：防止 PID 复用
+            // UID 二次检查 (防止 PID 复用)
             match get_process_uid(pid) {
                 Some(uid) if uid < MIN_APP_UID => {
                     pids_to_remove.push(pid);
@@ -204,26 +218,37 @@ async fn start_monitor_loop(
                 _ => {}
             }
 
-            // cmdline 检查
             let cmdline = get_cmdline(pid);
-            if cmdline.is_empty() || cmdline == "zygote" {
+            if cmdline.is_empty() {
                 pids_to_remove.push(pid);
                 continue;
             }
 
             // OOM 检查
             let score = get_oom_score(pid);
+
+            // 只有处于 Cached 状态 (>=800) 才杀
             if score >= OOM_SCORE_THRESHOLD {
                 if kill(Pid::from_raw(pid as i32), Signal::SIGKILL).is_ok() {
-                    let mut log_guard = logger.lock().await;
-                    if let Some(l) = log_guard.as_mut() {
-                        l.write_cleanup(&[format!("PID:{} | OOM:{} | {}", pid, score, cmdline)]);
-                    }
+                    // 记录到本轮日志列表
+                    killed_in_this_round.push(format!("PID:{} | OOM:{} | {}", pid, score, cmdline));
+                    pids_to_remove.push(pid);
+                } else {
+                    pids_to_remove.push(pid);
                 }
-                pids_to_remove.push(pid);
             }
         }
 
+        // 统一写入日志 (如果本轮有杀进程的话)
+        if !killed_in_this_round.is_empty() {
+            println!("🔪 本轮清理了 {} 个子进程", killed_in_this_round.len());
+            let mut log_guard = logger.lock().await;
+            if let Some(l) = log_guard.as_mut() {
+                l.write_cleanup(&killed_in_this_round);
+            }
+        }
+
+        // 清理监控集合
         if !pids_to_remove.is_empty() {
             let mut pids = monitoring_pids.lock().await;
             for pid in pids_to_remove {
@@ -286,13 +311,9 @@ fn is_in_whitelist(cmdline: &str, whitelist: &FxHashSet<WhitelistRule>) -> bool 
     false
 }
 
-// === 配置文件加载 (已移除硬编码白名单) ===
 fn load_config(path: &str) -> AppConfig {
     let mut interval = DEFAULT_INTERVAL;
     let mut whitelist: FxHashSet<WhitelistRule> = FxHashSet::default();
-
-    // 既然做了严格的 UID 过滤，这里不再需要硬编码系统应用
-    // 用户可以在配置文件里自己加需要的应用白名单
 
     if let Ok(content) = fs::read_to_string(path) {
         let mut in_whitelist_mode = false;
@@ -339,7 +360,6 @@ fn parse_whitelist_rules(line: &str, whitelist: &mut FxHashSet<WhitelistRule>) {
     }
 }
 
-// === Logger (无变更) ===
 static TIME_FMT: &[FormatItem<'static>] =
     format_description!("[year]-[month]-[day] [hour]:[minute]:[second]");
 
@@ -394,17 +414,20 @@ impl Logger {
     fn write_startup(&mut self) {
         if let Some(mut writer) = self.open_writer() {
             let _ = writeln!(writer, "=== 启动时间: {} ===", now_fmt());
-            let _ = writeln!(writer, "⚡ eBPF 进程压制 (UID安全版) 已启动 ⚡\n");
+            let _ = writeln!(writer, "⚡ eBPF 子进程压制器 (主进程保护版) ⚡\n");
         }
     }
 
+    // 🔥 修复后的日志方法：接收列表，批量写入 🔥
     fn write_cleanup(&mut self, killed_list: &[String]) {
         if let Some(mut writer) = self.open_writer() {
+            // 先写时间头
             let _ = writeln!(writer, "=== 清理时间: {} ===", now_fmt());
+            // 再写具体进程
             for pkg in killed_list {
                 let _ = writeln!(writer, "已清理: {}", pkg);
             }
-            let _ = writeln!(writer);
+            let _ = writeln!(writer); // 空行分隔
         }
     }
 }
