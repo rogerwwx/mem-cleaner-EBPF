@@ -24,10 +24,10 @@ use time::{format_description::FormatItem, Date, OffsetDateTime};
 
 // === 配置常量 ===
 const OOM_SCORE_THRESHOLD: i32 = 800;
-const INIT_DELAY_SECS: u64 = 2; // 等待 Specialize
+const INIT_DELAY_SECS: u64 = 3; // 等待 Specialize
 const DEFAULT_INTERVAL: u64 = 30;
 const MIN_APP_UID: u32 = 10000; // < 10000 均为系统进程，严禁查杀
-const DOZE_PAUSE_SECS: u64 = 300;
+const DOZE_PAUSE_SECS: u64 = 60;
 const DOZE_CHECK_CMD: &str = "deviceidle";
 const DOZE_CHECK_ARGS: &[&str] = &["get", "deep"];
 
