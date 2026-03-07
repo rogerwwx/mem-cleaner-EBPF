@@ -9,7 +9,7 @@ aya = { version = "0.13.1", features = ["async_tokio"] }
 bytes = "1.11.1"
 
 # nix 保持精简
-nix = { version = "0.31.2", default-features = false, features = ["signal", "process", "unistd"] }
+nix = { version = "0.31.2", default-features = false, features = ["signal", "process"] }
 
 # 时间处理
 time = { version = "0.3.36", default-features = false, features = ["formatting", "local-offset", "macros", "std"] }
