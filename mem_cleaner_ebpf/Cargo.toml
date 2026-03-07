@@ -4,5 +4,5 @@ version = "0.2.0"
 edition = "2021"
 
 [dependencies]
-aya-ebpf = "0.13.1"
+aya-ebpf = "0.1.1"
 mem_cleaner_common = { path = "../mem_cleaner_common" }
