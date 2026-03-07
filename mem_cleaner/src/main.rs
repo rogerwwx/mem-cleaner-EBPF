@@ -202,7 +202,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     loop {
         // 🔥 终极修复：使用 None 代表永久阻塞，不再使用 C 风格的 -1
-        match epoller.wait(&mut epoll_events, None) {
+        match epoller.wait(&mut epoll_events, None::<Duration>) {
             Ok(n) => {
                 for i in 0..n {
                     let cpu_id = epoll_events[i].data();
