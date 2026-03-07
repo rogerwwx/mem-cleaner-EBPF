@@ -1,5 +1,6 @@
-   0.123412300s  INFO prepare_target{force=false package_id=mem_cleaner v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner) target="mem_cleaner"}: cargo::core::compiler::fingerprint: fingerprint error for mem_cleaner v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner)/Check { test: false }/TargetInner { name: "mem_cleaner", doc: true, ..: with_path("C:\\Users\\zcm\\Downloads\\mem-cleaner-EBPF\\mem_cleaner\\src\\main.rs", Edition2021) }
-   0.123475300s  INFO prepare_target{force=false package_id=mem_cleaner v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner) target="mem_cleaner"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\mem_cleaner-a8ef22a1e3e8355e\bin-mem_cleaner`
+   0.130158300s  INFO prepare_target{force=false package_id=mem_cleaner v0.3.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner) target="mem_cleaner"}: cargo::core::compiler::fingerprint: dependency on `thiserror_impl` is newer than we are 13417328972.143954100s > 13417328972.128954700s "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\thiserror-1.0.69"
+   0.135392800s  INFO prepare_target{force=false package_id=mem_cleaner v0.3.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner) target="mem_cleaner"}: cargo::core::compiler::fingerprint: fingerprint error for mem_cleaner v0.3.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner)/Check { test: false }/TargetInner { name: "mem_cleaner", doc: true, ..: with_path("C:\\Users\\zcm\\Downloads\\mem-cleaner-EBPF\\mem_cleaner\\src\\main.rs", Edition2021) }
+   0.135449800s  INFO prepare_target{force=false package_id=mem_cleaner v0.3.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner) target="mem_cleaner"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\mem_cleaner-49b16dd3136319f2\bin-mem_cleaner`
 
 Caused by:
     系统找不到指定的文件。 (os error 2)
@@ -26,8 +27,8 @@ Stack backtrace:
   18: git_midx_writer_dump
   19: BaseThreadInitThunk
   20: RtlUserThreadStart
-   0.139697000s  INFO prepare_target{force=false package_id=aya v0.12.0 target="aya"}: cargo::core::compiler::fingerprint: fingerprint error for aya v0.12.0/Check { test: false }/TargetInner { name_inferred: true, ..: lib_target("aya", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\aya-0.12.0\\src\\lib.rs", Edition2021) }
-   0.139739300s  INFO prepare_target{force=false package_id=aya v0.12.0 target="aya"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\aya-ba4c2511711d7aa0\lib-aya`
+   0.158350200s  INFO prepare_target{force=false package_id=aya v0.12.0 target="aya"}: cargo::core::compiler::fingerprint: fingerprint error for aya v0.12.0/Check { test: false }/TargetInner { name_inferred: true, ..: lib_target("aya", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\aya-0.12.0\\src\\lib.rs", Edition2021) }
+   0.158419400s  INFO prepare_target{force=false package_id=aya v0.12.0 target="aya"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\aya-d348aa6c6a3436d8\lib-aya`
 
 Caused by:
     系统找不到指定的文件。 (os error 2)
@@ -55,8 +56,8 @@ Stack backtrace:
   19: git_midx_writer_dump
   20: BaseThreadInitThunk
   21: RtlUserThreadStart
-   0.140902900s  INFO prepare_target{force=false package_id=aya-obj v0.1.0 target="aya_obj"}: cargo::core::compiler::fingerprint: fingerprint error for aya-obj v0.1.0/Check { test: false }/TargetInner { name_inferred: true, ..: lib_target("aya_obj", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\aya-obj-0.1.0\\src\\lib.rs", Edition2021) }
-   0.140930600s  INFO prepare_target{force=false package_id=aya-obj v0.1.0 target="aya_obj"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\aya-obj-a3119ed9506011cd\lib-aya_obj`
+   0.159989200s  INFO prepare_target{force=false package_id=aya-obj v0.1.0 target="aya_obj"}: cargo::core::compiler::fingerprint: fingerprint error for aya-obj v0.1.0/Check { test: false }/TargetInner { name_inferred: true, ..: lib_target("aya_obj", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\aya-obj-0.1.0\\src\\lib.rs", Edition2021) }
+   0.160051200s  INFO prepare_target{force=false package_id=aya-obj v0.1.0 target="aya_obj"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\aya-obj-fc25ac78934a6b69\lib-aya_obj`
 
 Caused by:
     系统找不到指定的文件。 (os error 2)
@@ -85,8 +86,10 @@ Stack backtrace:
   20: git_midx_writer_dump
   21: BaseThreadInitThunk
   22: RtlUserThreadStart
-   0.161607600s  INFO prepare_target{force=false package_id=mem_cleaner v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner) target="mem_cleaner"}: cargo::core::compiler::fingerprint: fingerprint error for mem_cleaner v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner)/Check { test: true }/TargetInner { name: "mem_cleaner", doc: true, ..: with_path("C:\\Users\\zcm\\Downloads\\mem-cleaner-EBPF\\mem_cleaner\\src\\main.rs", Edition2021) }
-   0.161638500s  INFO prepare_target{force=false package_id=mem_cleaner v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner) target="mem_cleaner"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\mem_cleaner-8318476c3cd8b23f\test-bin-mem_cleaner`
+   0.171347200s  INFO prepare_target{force=false package_id=thiserror v1.0.69 target="thiserror"}: cargo::core::compiler::fingerprint: fingerprint dirty for thiserror v1.0.69/Check { test: false }/TargetInner { ..: lib_target("thiserror", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\thiserror-1.0.69\\src\\lib.rs", Edition2021) }
+   0.171402900s  INFO prepare_target{force=false package_id=thiserror v1.0.69 target="thiserror"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(StaleDependency { name: "thiserror_impl", dep_mtime: FileTime { seconds: 13417328972, nanos: 143954100 }, max_mtime: FileTime { seconds: 13417328972, nanos: 128954700 } })
+   0.188562000s  INFO prepare_target{force=false package_id=mem_cleaner v0.3.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner) target="mem_cleaner"}: cargo::core::compiler::fingerprint: fingerprint error for mem_cleaner v0.3.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner)/Check { test: true }/TargetInner { name: "mem_cleaner", doc: true, ..: with_path("C:\\Users\\zcm\\Downloads\\mem-cleaner-EBPF\\mem_cleaner\\src\\main.rs", Edition2021) }
+   0.188604000s  INFO prepare_target{force=false package_id=mem_cleaner v0.3.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner) target="mem_cleaner"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\mem_cleaner-94c0c928f6e4a193\test-bin-mem_cleaner`
 
 Caused by:
     系统找不到指定的文件。 (os error 2)
@@ -113,93 +116,6 @@ Stack backtrace:
   18: git_midx_writer_dump
   19: BaseThreadInitThunk
   20: RtlUserThreadStart
-   0.170603400s  INFO prepare_target{force=false package_id=mem_cleaner_ebpf v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner_ebpf) target="mem_cleaner_ebpf"}: cargo::core::compiler::fingerprint: fingerprint error for mem_cleaner_ebpf v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner_ebpf)/Check { test: false }/TargetInner { name: "mem_cleaner_ebpf", doc: true, ..: with_path("C:\\Users\\zcm\\Downloads\\mem-cleaner-EBPF\\mem_cleaner_ebpf\\src\\main.rs", Edition2021) }
-   0.170639900s  INFO prepare_target{force=false package_id=mem_cleaner_ebpf v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner_ebpf) target="mem_cleaner_ebpf"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\mem_cleaner_ebpf-6ab18d9e6eeb020a\bin-mem_cleaner_ebpf`
-
-Caused by:
-    系统找不到指定的文件。 (os error 2)
-
-Stack backtrace:
-   0: git_midx_writer_dump
-   1: git_midx_writer_dump
-   2: git_midx_writer_dump
-   3: git_midx_writer_dump
-   4: git_filter_source_repo
-   5: git_filter_source_repo
-   6: git_filter_source_repo
-   7: git_filter_source_repo
-   8: git_filter_source_repo
-   9: git_filter_source_repo
-  10: git_filter_source_repo
-  11: git_libgit2_prerelease
-  12: <unknown>
-  13: <unknown>
-  14: <unknown>
-  15: <unknown>
-  16: git_midx_writer_dump
-  17: git_filter_source_repo
-  18: git_midx_writer_dump
-  19: BaseThreadInitThunk
-  20: RtlUserThreadStart
-   0.171246000s  INFO prepare_target{force=false package_id=aya-ebpf v0.1.1 target="aya_ebpf"}: cargo::core::compiler::fingerprint: fingerprint error for aya-ebpf v0.1.1/Check { test: false }/TargetInner { ..: lib_target("aya_ebpf", ["lib"], "C:\\Users\\zcm\\.cargo\\registry\\src\\index.crates.io-1949cf8c6b5b557f\\aya-ebpf-0.1.1\\src\\lib.rs", Edition2021) }
-   0.171266500s  INFO prepare_target{force=false package_id=aya-ebpf v0.1.1 target="aya_ebpf"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\aya-ebpf-203619070d2c7a3d\lib-aya_ebpf`
-
-Caused by:
-    系统找不到指定的文件。 (os error 2)
-
-Stack backtrace:
-   0: git_midx_writer_dump
-   1: git_midx_writer_dump
-   2: git_midx_writer_dump
-   3: git_midx_writer_dump
-   4: git_filter_source_repo
-   5: git_filter_source_repo
-   6: git_filter_source_repo
-   7: git_filter_source_repo
-   8: git_filter_source_repo
-   9: git_filter_source_repo
-  10: git_filter_source_repo
-  11: git_filter_source_repo
-  12: git_libgit2_prerelease
-  13: <unknown>
-  14: <unknown>
-  15: <unknown>
-  16: <unknown>
-  17: git_midx_writer_dump
-  18: git_filter_source_repo
-  19: git_midx_writer_dump
-  20: BaseThreadInitThunk
-  21: RtlUserThreadStart
-   0.186684100s  INFO prepare_target{force=false package_id=mem_cleaner_ebpf v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner_ebpf) target="mem_cleaner_ebpf"}: cargo::core::compiler::fingerprint: fingerprint error for mem_cleaner_ebpf v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner_ebpf)/Check { test: true }/TargetInner { name: "mem_cleaner_ebpf", doc: true, ..: with_path("C:\\Users\\zcm\\Downloads\\mem-cleaner-EBPF\\mem_cleaner_ebpf\\src\\main.rs", Edition2021) }
-   0.186715100s  INFO prepare_target{force=false package_id=mem_cleaner_ebpf v0.2.0 (C:\Users\zcm\Downloads\mem-cleaner-EBPF\mem_cleaner_ebpf) target="mem_cleaner_ebpf"}: cargo::core::compiler::fingerprint:     err: failed to read `C:\Users\zcm\Downloads\mem-cleaner-EBPF\target\debug\.fingerprint\mem_cleaner_ebpf-082df5fa1accab13\test-bin-mem_cleaner_ebpf`
-
-Caused by:
-    系统找不到指定的文件。 (os error 2)
-
-Stack backtrace:
-   0: git_midx_writer_dump
-   1: git_midx_writer_dump
-   2: git_midx_writer_dump
-   3: git_midx_writer_dump
-   4: git_filter_source_repo
-   5: git_filter_source_repo
-   6: git_filter_source_repo
-   7: git_filter_source_repo
-   8: git_filter_source_repo
-   9: git_filter_source_repo
-  10: git_filter_source_repo
-  11: git_libgit2_prerelease
-  12: <unknown>
-  13: <unknown>
-  14: <unknown>
-  15: <unknown>
-  16: git_midx_writer_dump
-  17: git_filter_source_repo
-  18: git_midx_writer_dump
-  19: BaseThreadInitThunk
-  20: RtlUserThreadStart
+    Checking thiserror v1.0.69
     Checking aya-obj v0.1.0
-    Checking aya-ebpf v0.1.1
-error: could not compile `aya-ebpf` (lib) due to 20 previous errors
-warning: build failed, waiting for other jobs to finish...
 error: could not compile `aya-obj` (lib) due to 4 previous errors

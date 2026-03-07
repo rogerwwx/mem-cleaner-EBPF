@@ -17,6 +17,6 @@ incremental = false
 debug = false
 rpath = false
 
-# eBPF 内核态包的局部覆盖 (只覆盖 opt-level，不碰 lto)
+# eBPF 内核态包的局部覆盖
 [profile.release.package.mem_cleaner_ebpf]
 opt-level = 3
