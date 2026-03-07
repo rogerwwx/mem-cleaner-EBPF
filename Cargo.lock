@@ -247,7 +247,6 @@ dependencies = [
  "aya",
  "bytes",
  "fxhash",
- "itoa",
  "mem_cleaner_common",
  "nix",
  "time",
