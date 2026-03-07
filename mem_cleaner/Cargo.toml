@@ -4,12 +4,12 @@ version = "0.2.0"
 edition = "2021"
 
 [dependencies]
-# 开启 async_tokio 特性
-aya = { version = "0.12.0", features = ["async_tokio"] }
-tokio = { version = "1.36", features = ["macros", "rt-multi-thread", "time", "sync"] }
-bytes = "1.5" # 新增：用于接收内核态发来的异步事件流
-nix = { version = "0.28", default-features = false, features = ["time", "signal", "fs", "process"] }
+# 移除 async_tokio 特性，使用同步 PerfEventArray
+aya = { version = "0.12.0", default-features = false }
+bytes = "1.5" # 用于处理 eBPF 事件数据
+# 增加 epoll 特性（必须，否则编译 epoll 相关函数会报错）
+nix = { version = "0.28", default-features = false, features = ["epoll", "time", "signal", "fs", "process"] }
 time = { version = "0.3", default-features = false, features = ["formatting", "local-offset", "macros", "std"] }
-fxhash = "0.2"
+fxhash = "0.2" # 高性能哈希集合
 itoa = "1.0"
-mem_cleaner_common = { path = "../mem_cleaner_common" }
+mem_cleaner_common = { path = "../mem_cleaner_common" } # 共享的 ProcessEvent 定义
