@@ -4,22 +4,21 @@ version = "0.4.0" # 版本升级
 edition = "2021"
 
 [dependencies]
-# 核心 eBPF 库，这次重新开启默认特性，因为它依赖 tokio
-aya = "0.12.0" 
+aya = { version = "0.14.0", features = ["async_tokio"] }
 
-bytes = "1.5"
+bytes = "1.6"
 
 # nix 保持精简
-nix = { version = "0.28", default-features = false, features = ["signal", "process"] }
+nix = { version = "0.29", default-features = false, features = ["signal", "process", "unistd"] }
 
 # 时间处理
-time = { version = "0.3", default-features = false, features = ["formatting", "local-offset", "macros", "std"] }
+time = { version = "0.3.36", default-features = false, features = ["formatting", "local-offset", "macros", "std"] }
 
 # 高性能 Hash
-fxhash = "0.2"
+fxhash = "0.2.1"
+
+# 🔥 把 Tokio 加回来，但只作为 I/O 引擎
+tokio = { version = "1.38.0", features = ["rt-multi-thread", "macros", "time"] }
 
 # 本地中间层依赖
 mem_cleaner_common = { path = "../mem_cleaner_common" }
-
-# 🔥 把 Tokio 加回来，但只作为 I/O 引擎
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }

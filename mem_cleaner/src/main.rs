@@ -65,7 +65,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("⚡ 初始化 Android 进程压制器 (双线程终极稳定版) ⚡");
 
     println!("📦 加载 eBPF 模块...");
-    let mut bpf = Bpf::load(&BPF_BYTES.0)?;
+    let mut bpf = Bpf::load_bytes(&BPF_BYTES.0)?;
 
     let program: &mut TracePoint = bpf.program_mut("sched_process_fork").unwrap().try_into()?;
     program.load()?;
