@@ -1,7 +1,7 @@
-use aya::maps::perf::AsyncPerfEventArray; // 🚨 回归 Async 版本
+use aya::maps::perf::AsyncPerfEventArray;
 use aya::programs::TracePoint;
 use aya::util::online_cpus;
-use aya::Bpf;
+use aya::Ebpf; // 🔴 替换废弃的 Bpf 为 Ebpf
 use bytes::BytesMut;
 use mem_cleaner_common::ProcessEvent;
 
@@ -65,12 +65,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("⚡ 初始化 Android 进程压制器 (双线程终极稳定版) ⚡");
 
     println!("📦 加载 eBPF 模块...");
-    let mut bpf = Bpf::load_bytes(&BPF_BYTES.0)?;
+    // 🔴 修复1: 替换 Bpf::load_bytes 为 Ebpf::load
+    let mut bpf = Ebpf::load(&BPF_BYTES.0)?;
 
     let program: &mut TracePoint = bpf.program_mut("sched_process_fork").unwrap().try_into()?;
     program.load()?;
     program.attach("sched", "sched_process_fork")?;
-    println!("✅ eBPF 挂载成功: 仅拦截 UID 0 (Zygote) 孵化");
+    println!("✅ eBPF 挂载成功: 仅拦截 UID 0 孵化");
 
     // ==========================================
     // 🧵 业务线程 (纯标准库，无 Tokio)
@@ -185,7 +186,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("🎧 Tokio I/O 引擎已启动，接管所有 CPU 核心中断...");
 
     // 为每个 CPU 核心启动一个轻量级的异步任务
-    for cpu_id in online_cpus()? {
+    // 🔴 修复2: 处理 online_cpus() 的错误类型转换
+    let cpus = online_cpus().map_err(|(msg, err)| format!("获取CPU列表失败: {}: {}", msg, err))?;
+    for cpu_id in cpus {
         let mut buf = perf_array.open(cpu_id, None)?;
         let tx_clone = tx.clone();
 
@@ -342,7 +345,7 @@ impl Logger {
         if let Some(mut w) = self.open_writer() {
             let _ = writeln!(
                 w,
-                "=== 启动时间: {} ===\n⚡ eBPF 进程压制 (双线程终极版) 已启动 ⚡\n",
+                "=== 启动时间: {} ===\n⚡ eBPF 进程压制 (双线程版) 已启动 ⚡\n",
                 now_fmt()
             );
         }
