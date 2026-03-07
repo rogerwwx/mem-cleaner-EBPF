@@ -1,19 +1,15 @@
 [package]
 name = "mem_cleaner"
-version = "0.3.0"
+version = "0.4.0" # 版本升级
 edition = "2021"
 
 [dependencies]
-# 关闭默认特性，极致精简
-aya = { version = "0.12.0", default-features = false }
+# 核心 eBPF 库，这次重新开启默认特性，因为它依赖 tokio
+aya = "0.12.0" 
 
-# 用于解析 eBPF 数据
 bytes = "1.5"
 
-# 核心系统调用库
-# - event: 开启 epoll 支持 (修复报错的关键)
-# - signal: 开启 kill 信号支持
-# - process: 开启 Pid 和进程相关支持
+# nix 保持精简
 nix = { version = "0.28", default-features = false, features = ["event", "signal", "process"] }
 
 # 时间处理
@@ -24,3 +20,6 @@ fxhash = "0.2"
 
 # 本地中间层依赖
 mem_cleaner_common = { path = "../mem_cleaner_common" }
+
+# 🔥 把 Tokio 加回来，但只作为 I/O 引擎
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }

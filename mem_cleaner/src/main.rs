@@ -1,4 +1,4 @@
-use aya::maps::perf::PerfEventArray;
+use aya::maps::perf::AsyncPerfEventArray; // 🚨 回归 Async 版本
 use aya::programs::TracePoint;
 use aya::util::online_cpus;
 use aya::Bpf;
@@ -6,18 +6,14 @@ use bytes::BytesMut;
 use mem_cleaner_common::ProcessEvent;
 
 use fxhash::FxHashSet;
-// 🚨 Nix 引用更新：彻底移除废弃函数和 EpollOp
-use nix::sys::epoll::{Epoll, EpollCreateFlags, EpollEvent, EpollFlags};
 use nix::sys::signal::{kill, Signal};
 use nix::unistd::Pid;
 
-use std::collections::{HashMap, VecDeque};
+use std::collections::VecDeque;
 use std::env;
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::os::unix::fs::MetadataExt;
-// 🚨 AsFd trait 需要被引入
-use std::os::unix::io::AsFd;
 use std::sync::mpsc::{self, RecvTimeoutError};
 use std::sync::Arc;
 use std::thread;
@@ -47,7 +43,9 @@ struct AppConfig {
     whitelist: FxHashSet<WhitelistRule>,
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+// 🔥 使用 Tokio 的 main 函数宏，启动异步运行时
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
         eprintln!("Usage: {} <config_path>[log_path]", args[0]);
@@ -64,7 +62,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         l.write_startup();
     }
 
-    println!("⚡ 初始化 Android 进程压制器 (双线程 Epoll 最终版) ⚡");
+    println!("⚡ 初始化 Android 进程压制器 (双线程终极稳定版) ⚡");
 
     println!("📦 加载 eBPF 模块...");
     let mut bpf = Bpf::load(&BPF_BYTES.0)?;
@@ -74,10 +72,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     program.attach("sched", "sched_process_fork")?;
     println!("✅ eBPF 挂载成功: 仅拦截 UID 0 (Zygote) 孵化");
 
-    let mut perf_array = PerfEventArray::try_from(bpf.take_map("EVENTS").unwrap())?;
-
     // ==========================================
-    // 🧵 工作线程 (业务逻辑)
+    // 🧵 业务线程 (纯标准库，无 Tokio)
     // ==========================================
     let (tx, rx) = mpsc::channel::<u32>();
 
@@ -87,7 +83,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let mut pending_queue: VecDeque<(u32, Instant)> = VecDeque::new();
         let mut next_cleanup = Instant::now() + Duration::from_secs(worker_config.interval);
 
-        println!("🛠️  业务线程已启动...");
+        println!("🛠️  业务线程已启动，等待 eBPF 投喂...");
 
         loop {
             let now = Instant::now();
@@ -100,7 +96,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     timeout = time_to_mature;
                 }
             }
-
             if timeout.is_zero() {
                 while let Ok(pid) = rx.try_recv() {
                     pending_queue.push_back((pid, Instant::now()));
@@ -117,7 +112,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     Err(RecvTimeoutError::Disconnected) => break,
                 }
             }
-
             let now = Instant::now();
             while let Some(&(pid, add_time)) = pending_queue.front() {
                 if now.duration_since(add_time).as_secs() >= INIT_DELAY_SECS {
@@ -183,49 +177,43 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     // ==========================================
-    // 🎯 主线程 (Epoll I/O)
+    // 🎯 主线程 (Tokio I/O 引擎)
     // ==========================================
-    let epoller = Epoll::new(EpollCreateFlags::EPOLL_CLOEXEC)?;
-    let mut perf_buffers = HashMap::new();
+    // 🚨 使用 Async 版本
+    let mut perf_array = AsyncPerfEventArray::try_from(bpf.take_map("EVENTS").unwrap())?;
 
+    println!("🎧 Tokio I/O 引擎已启动，接管所有 CPU 核心中断...");
+
+    // 为每个 CPU 核心启动一个轻量级的异步任务
     for cpu_id in online_cpus()? {
-        let buf = perf_array.open(cpu_id, None)?;
-        let mut event = EpollEvent::new(EpollFlags::EPOLLIN, cpu_id as u64);
-        epoller.add(buf.as_fd(), event)?;
-        perf_buffers.insert(cpu_id as u64, buf);
-    }
+        let mut buf = perf_array.open(cpu_id, None)?;
+        let tx_clone = tx.clone();
 
-    println!("🎧 Epoll 监听线程就绪...");
-
-    let mut event_buffers = vec![BytesMut::with_capacity(1024); 10];
-    let mut epoll_events = [EpollEvent::empty(); 16];
-
-    loop {
-        // 🔥 终极修复：使用 None 代表永久阻塞，不再使用 C 风格的 -1
-        match epoller.wait(&mut epoll_events, None::<u16>) {
-            Ok(n) => {
-                for i in 0..n {
-                    let cpu_id = epoll_events[i].data();
-                    if let Some(buf) = perf_buffers.get_mut(&cpu_id) {
-                        if let Ok(events) = buf.read_events(&mut event_buffers) {
-                            for j in 0..events.read {
-                                let ptr = event_buffers[j].as_ptr() as *const ProcessEvent;
-                                let event = unsafe { std::ptr::read_unaligned(ptr) };
-                                let _ = tx.send(event.pid);
-                            }
+        tokio::spawn(async move {
+            let mut buffers = (0..10)
+                .map(|_| BytesMut::with_capacity(1024))
+                .collect::<Vec<_>>();
+            loop {
+                // 🔥 使用官方的、绝对稳定的异步读取方法
+                match buf.read_events(&mut buffers).await {
+                    Ok(events) => {
+                        for i in 0..events.read {
+                            let ptr = buffers[i].as_ptr() as *const ProcessEvent;
+                            let event = unsafe { std::ptr::read_unaligned(ptr) };
+                            // 把 PID 扔给业务线程，自己立刻回去等下一波
+                            let _ = tx_clone.send(event.pid);
                         }
                     }
+                    Err(_) => continue,
                 }
             }
-            Err(e) if e == nix::errno::Errno::EINTR => continue,
-            Err(e) => {
-                eprintln!("Epoll Error: {:?}", e);
-                break;
-            }
-        }
+        });
     }
 
-    Ok(())
+    // 主线程保活
+    loop {
+        tokio::time::sleep(Duration::from_secs(3600)).await;
+    }
 }
 
 // ================== 辅助函数 (保持不变) ==================
@@ -354,7 +342,7 @@ impl Logger {
         if let Some(mut w) = self.open_writer() {
             let _ = writeln!(
                 w,
-                "=== 启动时间: {} ===\n⚡ eBPF 进程压制 (双线程 Epoll 版) 已启动 ⚡\n",
+                "=== 启动时间: {} ===\n⚡ eBPF 进程压制 (双线程终极版) 已启动 ⚡\n",
                 now_fmt()
             );
         }
