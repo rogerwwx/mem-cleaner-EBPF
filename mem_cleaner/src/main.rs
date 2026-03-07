@@ -6,7 +6,8 @@ use bytes::BytesMut;
 use mem_cleaner_common::ProcessEvent;
 
 use fxhash::FxHashSet;
-use nix::sys::epoll::{epoll_create1, epoll_ctl, epoll_wait, EpollCreateFlags, EpollEvent, EpollFlags, EpollOp};
+// 修复：删除弃用的全局函数，改用Epoll结构体
+use nix::sys::epoll::{Epoll, EpollCreateFlags, EpollEvent, EpollFlags, EpollOp};
 use nix::sys::signal::{kill, Signal};
 use nix::unistd::Pid;
 
@@ -63,7 +64,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = Arc::new(load_config(config_path));
     let (event_sender, event_receiver) = mpsc::sync_channel::<ProcessEvent>(CHANNEL_CAPACITY);
 
-    // ================== 1. IO 线程（修复：返回值加Send+Sync） ==================
+    // ================== 1. IO 线程（epoll API 已更新为规范写法） ==================
     let io_thread_handle = thread::Builder::new()
         .name("ebpf-io-thread".to_string())
         .spawn(move || -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
@@ -77,14 +78,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let mut perf_array = PerfEventArray::try_from(bpf.take_map("EVENTS").unwrap())?;
 
-            let epfd = epoll_create1(EpollCreateFlags::EPOLL_CLOEXEC)?;
+            // 修复：用Epoll::new()替代弃用的epoll_create1，标志位不变
+            let epoll = Epoll::new(EpollCreateFlags::EPOLL_CLOEXEC)?;
             let mut perf_buffers = HashMap::new();
 
+            // 为所有在线 CPU 注册事件缓冲区
             for cpu_id in online_cpus()? {
                 let buf = perf_array.open(cpu_id, None)?;
                 let fd = buf.as_raw_fd();
                 let mut event = EpollEvent::new(EpollFlags::EPOLLIN, cpu_id as u64);
-                epoll_ctl(epfd, EpollOp::EpollCtlAdd, fd, &mut event)?;
+                // 修复：用epoll.ctl()实例方法替代弃用的epoll_ctl
+                epoll.ctl(EpollOp::EpollCtlAdd, fd, Some(&mut event))?;
                 perf_buffers.insert(cpu_id as u64, buf);
             }
 
@@ -93,8 +97,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let mut event_buffers = vec![BytesMut::with_capacity(1024); 10];
             let mut epoll_events = [EpollEvent::empty(); 16];
 
+            // 🔥 IO 线程核心循环
             loop {
-                match epoll_wait(epfd, &mut epoll_events, -1) {
+                // 修复：用epoll.wait()实例方法替代弃用的epoll_wait，-1永久阻塞逻辑不变
+                match epoll.wait(&mut epoll_events, -1) {
                     Ok(n) => {
                         for i in 0..n {
                             let cpu_id = epoll_events[i].data();
@@ -136,7 +142,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             loop {
                 let now = Instant::now();
 
-                // 修复：u128转u64，安全适配from_millis的入参要求
+                // 计算动态超时时间
                 let mut timeout_ms = next_cleanup_time.saturating_duration_since(now).as_millis() as u64;
                 if let Some(&(_, add_time)) = pending_queue.front() {
                     let mature_time = add_time + Duration::from_secs(INIT_DELAY_SECS);
@@ -144,7 +150,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     timeout_ms = timeout_ms.min(pending_timeout);
                 }
 
-                // 修复：传入正确的u64类型超时时间
+                // 阻塞等待事件或超时
                 match event_receiver.recv_timeout(Duration::from_millis(timeout_ms)) {
                     Ok(event) => {
                         pending_queue.push_back((event.pid, Instant::now()));
@@ -158,7 +164,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                 let now = Instant::now();
 
-                // 处理pending队列
+                // 处理成熟的pending进程
                 while let Some(&(pid, add_time)) = pending_queue.front() {
                     if now.duration_since(add_time).as_secs() >= INIT_DELAY_SECS {
                         pending_queue.pop_front();
@@ -209,14 +215,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }
                     }
 
+                    // 写日志
                     if !killed_in_this_round.is_empty() {
                         if let Some(l) = &mut logger { l.write_cleanup(&killed_in_this_round); }
                     }
 
+                    // 移除失效PID
                     for pid in pids_to_remove {
                         monitoring_pids.remove(&pid);
                     }
 
+                    // 重置清理周期
                     next_cleanup_time = now + Duration::from_secs(config.interval);
                 }
             }
