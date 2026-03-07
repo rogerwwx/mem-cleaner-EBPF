@@ -4,10 +4,23 @@ version = "0.3.0"
 edition = "2021"
 
 [dependencies]
+# 关闭默认特性，极致精简
 aya = { version = "0.12.0", default-features = false }
+
+# 用于解析 eBPF 数据
 bytes = "1.5"
-nix = { version = "0.28", default-features = false, features = ["event", "time", "signal", "fs", "process"] }
+
+# 核心系统调用库
+# - event: 开启 epoll 支持 (修复报错的关键)
+# - signal: 开启 kill 信号支持
+# - process: 开启 Pid 和进程相关支持
+nix = { version = "0.28", default-features = false, features = ["event", "signal", "process"] }
+
+# 时间处理
 time = { version = "0.3", default-features = false, features = ["formatting", "local-offset", "macros", "std"] }
+
+# 高性能 Hash
 fxhash = "0.2"
-itoa = "1.0"
+
+# 本地中间层依赖
 mem_cleaner_common = { path = "../mem_cleaner_common" }

@@ -1,4 +1,3 @@
-// src/main.rs
 use aya::maps::perf::PerfEventArray;
 use aya::programs::TracePoint;
 use aya::util::online_cpus;
@@ -7,8 +6,10 @@ use bytes::BytesMut;
 use mem_cleaner_common::ProcessEvent;
 
 use fxhash::FxHashSet;
-// 使用 Epoll 结构体与 epoll_ctl 自由函数
-use nix::sys::epoll::{epoll_ctl, Epoll, EpollCreateFlags, EpollEvent, EpollFlags, EpollOp};
+// 依赖修正后，这里的引用就有效了
+use nix::sys::epoll::{
+    epoll_create1, epoll_ctl, epoll_wait, EpollCreateFlags, EpollEvent, EpollFlags, EpollOp,
+};
 use nix::sys::signal::{kill, Signal};
 use nix::unistd::Pid;
 
@@ -18,7 +19,7 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::os::unix::fs::MetadataExt;
 use std::os::unix::io::AsRawFd;
-use std::sync::mpsc;
+use std::sync::mpsc::{self, RecvTimeoutError};
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -31,8 +32,8 @@ const OOM_SCORE_THRESHOLD: i32 = 800;
 const INIT_DELAY_SECS: u64 = 2;
 const DEFAULT_INTERVAL: u64 = 30;
 const MIN_APP_UID: u32 = 10000;
-const CHANNEL_CAPACITY: usize = 1024;
 
+// 强制对齐
 #[repr(C, align(8))]
 struct AlignedBpf([u8; include_bytes!("mem_cleaner_ebpf.o").len()]);
 static BPF_BYTES: AlignedBpf = AlignedBpf(*include_bytes!("mem_cleaner_ebpf.o"));
@@ -43,234 +44,217 @@ enum WhitelistRule {
     Prefix(String),
 }
 
-#[derive(Debug, Clone)]
 struct AppConfig {
     interval: u64,
     whitelist: FxHashSet<WhitelistRule>,
 }
 
-// ================== 主函数 ==================
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
-        eprintln!("Usage: {} <config_path>[log_path]", args[0]);
+        eprintln!("Usage: {} <config_path> [log_path]", args[0]);
         std::process::exit(1);
     }
 
-    let config_path = &args[1];
-    let log_path = if args.len() > 2 {
+    let config = Arc::new(load_config(&args[1]));
+    let mut logger = Logger::new(if args.len() > 2 {
         Some(args[2].clone())
     } else {
         None
-    };
+    });
+    if let Some(l) = &mut logger {
+        l.write_startup();
+    }
 
-    println!("⚡ 初始化 Android 进程压制器 (双线程 Epoll 高性能版) ⚡");
+    println!("⚡ 初始化 Android 进程压制器 (双线程 Epoll 修正版) ⚡");
 
-    let config = Arc::new(load_config(config_path));
-    let (event_sender, event_receiver) = mpsc::sync_channel::<ProcessEvent>(CHANNEL_CAPACITY);
+    println!("📦 加载 eBPF 模块...");
+    let mut bpf = Bpf::load(&BPF_BYTES.0)?;
 
-    // ================== 1. IO 线程（epoll API 使用 Epoll + epoll_ctl） ==================
-    let io_thread_handle = thread::Builder::new()
-        .name("ebpf-io-thread".to_string())
-        .spawn(
-            move || -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
-                println!("📦 [IO线程] 加载 eBPF 模块...");
-                let mut bpf = Bpf::load(&BPF_BYTES.0)?;
+    let program: &mut TracePoint = bpf.program_mut("sched_process_fork").unwrap().try_into()?;
+    program.load()?;
+    program.attach("sched", "sched_process_fork")?;
+    println!("✅ eBPF 挂载成功: 仅拦截 UID 0 (Zygote) 孵化");
 
-                let program: &mut TracePoint =
-                    bpf.program_mut("sched_process_fork").unwrap().try_into()?;
-                program.load()?;
-                program.attach("sched", "sched_process_fork")?;
-                println!("✅ [IO线程] eBPF 挂载成功: 仅拦截 UID 0 (Zygote) 孵化");
+    let mut perf_array = PerfEventArray::try_from(bpf.take_map("EVENTS").unwrap())?;
 
-                let mut perf_array = PerfEventArray::try_from(bpf.take_map("EVENTS").unwrap())?;
+    // ==========================================
+    // 🧵 工作线程 (业务逻辑)
+    // ==========================================
+    let (tx, rx) = mpsc::channel::<u32>();
 
-                // 使用 Epoll::new() 创建实例
-                let epoll = Epoll::new(EpollCreateFlags::EPOLL_CLOEXEC)?;
-                let mut perf_buffers = HashMap::new();
+    let worker_config = config.clone();
+    thread::spawn(move || {
+        let mut monitoring_pids: FxHashSet<u32> = FxHashSet::default();
+        let mut pending_queue: VecDeque<(u32, Instant)> = VecDeque::new();
+        let mut next_cleanup = Instant::now() + Duration::from_secs(worker_config.interval);
 
-                // 为所有在线 CPU 注册事件缓冲区
-                for cpu_id in online_cpus()? {
-                    let buf = perf_array.open(cpu_id, None)?;
-                    let fd = buf.as_raw_fd();
-                    let mut event = EpollEvent::new(EpollFlags::EPOLLIN, cpu_id as u64);
-                    // 使用自由函数 epoll_ctl，传入 epoll.as_raw_fd()
-                    epoll_ctl(epoll.as_raw_fd(), EpollOp::EpollCtlAdd, fd, &mut event)?;
-                    perf_buffers.insert(cpu_id as u64, buf);
+        println!("🛠️  业务线程已启动...");
+
+        loop {
+            let now = Instant::now();
+            let mut timeout = next_cleanup.saturating_duration_since(now);
+
+            if let Some(&(_, add_time)) = pending_queue.front() {
+                let mature_time = add_time + Duration::from_secs(INIT_DELAY_SECS);
+                let time_to_mature = mature_time.saturating_duration_since(now);
+                if time_to_mature < timeout {
+                    timeout = time_to_mature;
                 }
-
-                println!("🎧 [IO线程] Epoll 引擎就绪，进入事件监听循环...");
-
-                let mut event_buffers = vec![BytesMut::with_capacity(1024); 10];
-                let mut epoll_events = [EpollEvent::empty(); 16];
-
-                // 🔥 IO 线程核心循环
-                loop {
-                    match epoll.wait(&mut epoll_events, -1) {
-                        Ok(n) => {
-                            for i in 0..n {
-                                let cpu_id = epoll_events[i].data();
-                                if let Some(buf) = perf_buffers.get_mut(&cpu_id) {
-                                    if let Ok(events) = buf.read_events(&mut event_buffers) {
-                                        for j in 0..events.read {
-                                            let ptr =
-                                                event_buffers[j].as_ptr() as *const ProcessEvent;
-                                            let event = unsafe { std::ptr::read_unaligned(ptr) };
-                                            // 发送到业务线程（同步通道）
-                                            let _ = event_sender.send(event);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        Err(e) if e == nix::errno::Errno::EINTR => continue,
-                        Err(e) => {
-                            eprintln!("[IO线程] Epoll 致命错误: {:?}", e);
-                            break;
-                        }
-                    }
-                }
-
-                Ok(())
-            },
-        )?;
-
-    // ================== 2. 业务处理线程 ==================
-    let business_thread_handle = thread::Builder::new()
-        .name("business-thread".to_string())
-        .spawn(move || {
-            let mut logger = Logger::new(log_path);
-            if let Some(l) = &mut logger {
-                l.write_startup();
             }
 
-            println!("✅ [业务线程] 初始化完成，进入处理循环...");
-
-            let mut monitoring_pids: FxHashSet<u32> = FxHashSet::default();
-            let mut pending_queue: VecDeque<(u32, Instant)> = VecDeque::new();
-            let mut next_cleanup_time = Instant::now() + Duration::from_secs(config.interval);
-
-            loop {
-                let now = Instant::now();
-
-                // 计算动态超时时间（毫秒）
-                let mut timeout_ms =
-                    next_cleanup_time.saturating_duration_since(now).as_millis() as u64;
-                if let Some(&(_, add_time)) = pending_queue.front() {
-                    let mature_time = add_time + Duration::from_secs(INIT_DELAY_SECS);
-                    let pending_timeout =
-                        mature_time.saturating_duration_since(now).as_millis() as u64;
-                    timeout_ms = timeout_ms.min(pending_timeout);
+            if timeout.is_zero() {
+                while let Ok(pid) = rx.try_recv() {
+                    pending_queue.push_back((pid, Instant::now()));
                 }
-
-                // 阻塞等待事件或超时
-                match event_receiver.recv_timeout(Duration::from_millis(timeout_ms)) {
-                    Ok(event) => {
-                        pending_queue.push_back((event.pid, Instant::now()));
+            } else {
+                match rx.recv_timeout(timeout) {
+                    Ok(pid) => {
+                        pending_queue.push_back((pid, Instant::now()));
+                        while let Ok(p) = rx.try_recv() {
+                            pending_queue.push_back((p, Instant::now()));
+                        }
                     }
-                    Err(mpsc::RecvTimeoutError::Timeout) => {}
-                    Err(mpsc::RecvTimeoutError::Disconnected) => {
-                        eprintln!("[业务线程] IO 线程已退出，终止运行");
-                        break;
-                    }
+                    Err(RecvTimeoutError::Timeout) => {}
+                    Err(RecvTimeoutError::Disconnected) => break,
                 }
+            }
 
-                let now = Instant::now();
+            let now = Instant::now();
 
-                // 处理成熟的 pending 进程
-                while let Some(&(pid, add_time)) = pending_queue.front() {
-                    if now.duration_since(add_time).as_secs() >= INIT_DELAY_SECS {
-                        pending_queue.pop_front();
-
-                        if let Some(uid) = get_process_uid(pid) {
-                            if uid >= MIN_APP_UID {
-                                let cmdline = get_cmdline(pid);
-                                if !cmdline.is_empty()
-                                    && cmdline.contains(':')
-                                    && !cmdline.contains("zygote")
-                                    && !is_in_whitelist(&cmdline, &config.whitelist)
-                                {
-                                    monitoring_pids.insert(pid);
-                                }
+            // 业务 A：处理成熟队列
+            while let Some(&(pid, add_time)) = pending_queue.front() {
+                if now.duration_since(add_time).as_secs() >= INIT_DELAY_SECS {
+                    pending_queue.pop_front();
+                    // 这里使用的是 std::fs，不需要 nix 的 fs 特性
+                    if let Some(uid) = get_process_uid(pid) {
+                        if uid >= MIN_APP_UID {
+                            let cmdline = get_cmdline(pid);
+                            if !cmdline.is_empty()
+                                && cmdline.contains(':')
+                                && !cmdline.contains("zygote")
+                                && !is_in_whitelist(&cmdline, &worker_config.whitelist)
+                            {
+                                monitoring_pids.insert(pid);
                             }
                         }
-                    } else {
-                        break;
                     }
+                } else {
+                    break;
                 }
+            }
 
-                // 周期清理
-                if now >= next_cleanup_time {
-                    let mut pids_to_remove = Vec::new();
-                    let mut killed_in_this_round = Vec::new();
+            // 业务 B：周期清理
+            if now >= next_cleanup {
+                let mut pids_to_remove = Vec::new();
+                let mut killed_in_this_round = Vec::new();
 
-                    for &pid in &monitoring_pids {
-                        match get_process_uid(pid) {
-                            Some(uid) if uid < MIN_APP_UID => {
-                                pids_to_remove.push(pid);
-                                continue;
-                            }
-                            None => {
-                                pids_to_remove.push(pid);
-                                continue;
-                            }
-                            _ => {}
-                        }
-
-                        let cmdline = get_cmdline(pid);
-                        if cmdline.is_empty() {
+                for &pid in &monitoring_pids {
+                    match get_process_uid(pid) {
+                        Some(uid) if uid < MIN_APP_UID => {
                             pids_to_remove.push(pid);
                             continue;
                         }
+                        None => {
+                            pids_to_remove.push(pid);
+                            continue;
+                        }
+                        _ => {}
+                    }
 
-                        let score = get_oom_score(pid);
-                        if score >= OOM_SCORE_THRESHOLD {
-                            if kill(Pid::from_raw(pid as i32), Signal::SIGKILL).is_ok() {
-                                killed_in_this_round
-                                    .push(format!("PID:{} | OOM:{} | {}", pid, score, cmdline));
-                                pids_to_remove.push(pid);
-                            } else {
-                                pids_to_remove.push(pid);
+                    let cmdline = get_cmdline(pid);
+                    if cmdline.is_empty() {
+                        pids_to_remove.push(pid);
+                        continue;
+                    }
+
+                    let score = get_oom_score(pid);
+                    if score >= OOM_SCORE_THRESHOLD {
+                        if kill(Pid::from_raw(pid as i32), Signal::SIGKILL).is_ok() {
+                            killed_in_this_round
+                                .push(format!("PID:{} | OOM:{} | {}", pid, score, cmdline));
+                            pids_to_remove.push(pid);
+                        } else {
+                            pids_to_remove.push(pid);
+                        }
+                    }
+                }
+
+                if !killed_in_this_round.is_empty() {
+                    if let Some(l) = &mut logger {
+                        l.write_cleanup(&killed_in_this_round);
+                    }
+                }
+
+                for pid in pids_to_remove {
+                    monitoring_pids.remove(&pid);
+                }
+
+                next_cleanup = Instant::now() + Duration::from_secs(worker_config.interval);
+            }
+        }
+    });
+
+    // ==========================================
+    // 🎯 主线程 (Epoll I/O)
+    // ==========================================
+    let epfd = epoll_create1(EpollCreateFlags::EPOLL_CLOEXEC)?;
+    let mut perf_buffers = HashMap::new();
+
+    for cpu_id in online_cpus()? {
+        let buf = perf_array.open(cpu_id, None)?;
+        // 这里的 epoll 注册依赖 nix 的 "event" 特性
+        let mut event = EpollEvent::new(EpollFlags::EPOLLIN, cpu_id as u64);
+        epoll_ctl(epfd, EpollOp::EpollCtlAdd, buf.as_raw_fd(), &mut event)?;
+        perf_buffers.insert(cpu_id as u64, buf);
+    }
+
+    println!("🎧 Epoll 监听线程就绪...");
+
+    let mut event_buffers = vec![BytesMut::with_capacity(1024); 10];
+    let mut epoll_events = [EpollEvent::empty(); 16];
+
+    loop {
+        match epoll_wait(epfd, &mut epoll_events, -1) {
+            Ok(n) => {
+                for i in 0..n {
+                    let cpu_id = epoll_events[i].data();
+                    if let Some(buf) = perf_buffers.get_mut(&cpu_id) {
+                        if let Ok(events) = buf.read_events(&mut event_buffers) {
+                            for j in 0..events.read {
+                                let ptr = event_buffers[j].as_ptr() as *const ProcessEvent;
+                                let event = unsafe { std::ptr::read_unaligned(ptr) };
+                                let _ = tx.send(event.pid);
                             }
                         }
                     }
-
-                    if !killed_in_this_round.is_empty() {
-                        if let Some(l) = &mut logger {
-                            l.write_cleanup(&killed_in_this_round);
-                        }
-                    }
-
-                    for pid in pids_to_remove {
-                        monitoring_pids.remove(&pid);
-                    }
-
-                    next_cleanup_time = now + Duration::from_secs(config.interval);
                 }
             }
-        })?;
-
-    // 等待线程退出（通常不会）
-    let _ = io_thread_handle.join();
-    let _ = business_thread_handle.join();
+            Err(e) if e == nix::errno::Errno::EINTR => continue,
+            Err(e) => {
+                eprintln!("Epoll Error: {:?}", e);
+                break;
+            }
+        }
+    }
 
     Ok(())
 }
 
-// ================== 辅助函数 ==================
+// 辅助函数保持不变
 fn get_process_uid(pid: u32) -> Option<u32> {
     fs::metadata(format!("/proc/{}", pid)).ok().map(|m| m.uid())
 }
 
 fn get_oom_score(pid: u32) -> i32 {
-    fs::read_to_string(format!("/proc/{}/oom_score_adj", pid))
+    fs::read_to_string(format!("/proc/{}/oom_score_adj"))
         .ok()
         .and_then(|c| c.trim().parse::<i32>().ok())
         .unwrap_or(-1000)
 }
 
 fn get_cmdline(pid: u32) -> String {
-    fs::read(format!("/proc/{}/cmdline", pid))
+    fs::read(format!("/proc/{}/cmdline"))
         .ok()
         .and_then(|c| {
             c.split(|&ch| ch == 0)
