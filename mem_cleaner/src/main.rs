@@ -6,10 +6,8 @@ use bytes::BytesMut;
 use mem_cleaner_common::ProcessEvent;
 
 use fxhash::FxHashSet;
-// 依赖修正后，这里的引用就有效了
-use nix::sys::epoll::{
-    epoll_create1, epoll_ctl, epoll_wait, EpollCreateFlags, EpollEvent, EpollFlags, EpollOp,
-};
+// 🚨 Nix 引用更新：直接使用 Epoll 结构体，不再导入废弃的函数
+use nix::sys::epoll::{Epoll, EpollCreateFlags, EpollEvent, EpollFlags, EpollOp};
 use nix::sys::signal::{kill, Signal};
 use nix::unistd::Pid;
 
@@ -33,7 +31,6 @@ const INIT_DELAY_SECS: u64 = 2;
 const DEFAULT_INTERVAL: u64 = 30;
 const MIN_APP_UID: u32 = 10000;
 
-// 强制对齐
 #[repr(C, align(8))]
 struct AlignedBpf([u8; include_bytes!("mem_cleaner_ebpf.o").len()]);
 static BPF_BYTES: AlignedBpf = AlignedBpf(*include_bytes!("mem_cleaner_ebpf.o"));
@@ -52,7 +49,7 @@ struct AppConfig {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
-        eprintln!("Usage: {} <config_path> [log_path]", args[0]);
+        eprintln!("Usage: {} <config_path>[log_path]", args[0]);
         std::process::exit(1);
     }
 
@@ -74,12 +71,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let program: &mut TracePoint = bpf.program_mut("sched_process_fork").unwrap().try_into()?;
     program.load()?;
     program.attach("sched", "sched_process_fork")?;
-    println!("✅ eBPF 挂载成功: 仅拦截 UID 0 (Zygote) 孵化");
+    println!("✅ eBPF 挂载成功: 仅拦截 UID 0 孵化");
 
     let mut perf_array = PerfEventArray::try_from(bpf.take_map("EVENTS").unwrap())?;
 
     // ==========================================
-    // 🧵 工作线程 (业务逻辑)
+    // 🧵 工作线程 (业务逻辑) - 无需修改
     // ==========================================
     let (tx, rx) = mpsc::channel::<u32>();
 
@@ -121,12 +118,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
 
             let now = Instant::now();
-
-            // 业务 A：处理成熟队列
             while let Some(&(pid, add_time)) = pending_queue.front() {
                 if now.duration_since(add_time).as_secs() >= INIT_DELAY_SECS {
                     pending_queue.pop_front();
-                    // 这里使用的是 std::fs，不需要 nix 的 fs 特性
                     if let Some(uid) = get_process_uid(pid) {
                         if uid >= MIN_APP_UID {
                             let cmdline = get_cmdline(pid);
@@ -143,12 +137,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     break;
                 }
             }
-
-            // 业务 B：周期清理
             if now >= next_cleanup {
                 let mut pids_to_remove = Vec::new();
                 let mut killed_in_this_round = Vec::new();
-
                 for &pid in &monitoring_pids {
                     match get_process_uid(pid) {
                         Some(uid) if uid < MIN_APP_UID => {
@@ -161,13 +152,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }
                         _ => {}
                     }
-
                     let cmdline = get_cmdline(pid);
                     if cmdline.is_empty() {
                         pids_to_remove.push(pid);
                         continue;
                     }
-
                     let score = get_oom_score(pid);
                     if score >= OOM_SCORE_THRESHOLD {
                         if kill(Pid::from_raw(pid as i32), Signal::SIGKILL).is_ok() {
@@ -179,33 +168,31 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }
                     }
                 }
-
                 if !killed_in_this_round.is_empty() {
                     if let Some(l) = &mut logger {
                         l.write_cleanup(&killed_in_this_round);
                     }
                 }
-
                 for pid in pids_to_remove {
                     monitoring_pids.remove(&pid);
                 }
-
                 next_cleanup = Instant::now() + Duration::from_secs(worker_config.interval);
             }
         }
     });
 
     // ==========================================
-    // 🎯 主线程 (Epoll I/O)
+    // 🎯 主线程 (Epoll I/O) - 重构！
     // ==========================================
-    let epfd = epoll_create1(EpollCreateFlags::EPOLL_CLOEXEC)?;
+    // ✨ Refactor: 使用 Epoll::new()，不再使用废弃函数
+    let epoller = Epoll::new(EpollCreateFlags::EPOLL_CLOEXEC)?;
     let mut perf_buffers = HashMap::new();
 
     for cpu_id in online_cpus()? {
         let buf = perf_array.open(cpu_id, None)?;
-        // 这里的 epoll 注册依赖 nix 的 "event" 特性
         let mut event = EpollEvent::new(EpollFlags::EPOLLIN, cpu_id as u64);
-        epoll_ctl(epfd, EpollOp::EpollCtlAdd, buf.as_raw_fd(), &mut event)?;
+        // ✨ Refactor: 使用 epoller.add() 方法
+        epoller.add(buf.as_raw_fd(), event)?;
         perf_buffers.insert(cpu_id as u64, buf);
     }
 
@@ -215,7 +202,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut epoll_events = [EpollEvent::empty(); 16];
 
     loop {
-        match epoll_wait(epfd, &mut epoll_events, -1) {
+        // ✨ Refactor: 使用 epoller.wait() 方法
+        match epoller.wait(&mut epoll_events, -1) {
             Ok(n) => {
                 for i in 0..n {
                     let cpu_id = epoll_events[i].data();
@@ -241,20 +229,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-// 辅助函数保持不变
+// ================== 辅助函数 - 修正！ ==================
 fn get_process_uid(pid: u32) -> Option<u32> {
     fs::metadata(format!("/proc/{}", pid)).ok().map(|m| m.uid())
 }
 
 fn get_oom_score(pid: u32) -> i32 {
-    fs::read_to_string(format!("/proc/{}/oom_score_adj"))
+    // 🔥 Fix: 将 pid 作为参数传入 format! 宏
+    fs::read_to_string(format!("/proc/{}/oom_score_adj", pid))
         .ok()
         .and_then(|c| c.trim().parse::<i32>().ok())
         .unwrap_or(-1000)
 }
 
 fn get_cmdline(pid: u32) -> String {
-    fs::read(format!("/proc/{}/cmdline"))
+    // 🔥 Fix: 将 pid 作为参数传入 format! 宏
+    fs::read(format!("/proc/{}/cmdline", pid))
         .ok()
         .and_then(|c| {
             c.split(|&ch| ch == 0)
