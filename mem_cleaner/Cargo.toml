@@ -6,7 +6,8 @@ edition = "2021"
 [dependencies]
 aya = { version = "0.12.0", default-features = false }
 bytes = "1.5"
-nix = { version = "0.28", default-features = false, features = ["time", "signal", "fs", "process"] }
+# 修复：加上event feature，nix的epoll模块由这个feature控制
+nix = { version = "0.28", default-features = false, features = ["event", "time", "signal", "fs", "process"] }
 time = { version = "0.3", default-features = false, features = ["formatting", "local-offset", "macros", "std"] }
 fxhash = "0.2"
 itoa = "1.0"
