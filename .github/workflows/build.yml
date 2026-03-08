@@ -2,17 +2,20 @@ name: Build Android eBPF Binary
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
+      - Tokio
+      - Smol
   workflow_dispatch:
 
 jobs:
-  build:
+  build-tokio:
+    if: github.ref == 'refs/heads/Tokio'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      # 缓存 Cargo 依赖 + target（依赖库）
       - name: Cache Cargo + Target
         uses: actions/cache@v4
         with:
@@ -24,7 +27,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-target-
 
-      # 安装工具链
       - name: Install Stable Rust Toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -41,7 +43,6 @@ jobs:
       - name: Install Cross
         run: cargo install cross --git https://github.com/cross-rs/cross
 
-      # 编译 eBPF（每次都会覆盖旧产物）
       - name: Build eBPF Kernel Program
         run: |
           cd mem_cleaner_ebpf
@@ -50,26 +51,80 @@ jobs:
             -Z build-std=core \
             --release
 
-      # 覆盖 eBPF .o 文件
       - name: Copy eBPF Object to Src
         run: |
           cp target/bpfel-unknown-none/release/mem_cleaner_ebpf mem_cleaner/src/mem_cleaner_ebpf.o
-          ls -la mem_cleaner/src/mem_cleaner_ebpf.o
 
-      # 编译 Android 用户态
-      - name: Build User-space Daemon for Android (aarch64)
-        env:
-          CROSS_NO_WARNINGS: 0
-        run: cross +stable build --target aarch64-linux-android -p mem_cleaner --release
+      - name: Build User-space Daemon (Tokio)
+        run: cross +stable build --target aarch64-linux-android -p mem_cleaner --release --features runtime-tokio
 
-      # 打包产物
       - name: Package Binary
         run: |
           mkdir -p output
-          cp target/aarch64-linux-android/release/mem_cleaner output/mem_cleaner
+          cp target/aarch64-linux-android/release/mem_cleaner output/mem_cleaner_tokio
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: mem_cleaner_ebpf_arm64
-          path: output/mem_cleaner
+          name: mem_cleaner_tokio_arm64
+          path: output/mem_cleaner_tokio
+
+  build-smol:
+    if: github.ref == 'refs/heads/Smol'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Cache Cargo + Target
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-target-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-target-
+
+      - name: Install Stable Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - name: Install Nightly Toolchain for eBPF
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src
+
+      - name: Install bpf-linker
+        run: cargo install bpf-linker
+
+      - name: Install Cross
+        run: cargo install cross --git https://github.com/cross-rs/cross
+
+      - name: Build eBPF Kernel Program
+        run: |
+          cd mem_cleaner_ebpf
+          RUSTFLAGS="-C linker=bpf-linker" cargo +nightly build \
+            --target bpfel-unknown-none \
+            -Z build-std=core \
+            --release
+
+      - name: Copy eBPF Object to Src
+        run: |
+          cp target/bpfel-unknown-none/release/mem_cleaner_ebpf mem_cleaner/src/mem_cleaner_ebpf.o
+
+      - name: Build User-space Daemon (Smol)
+        run: cross +stable build --target aarch64-linux-android -p mem_cleaner --release --features runtime-smol
+
+      - name: Package Binary
+        run: |
+          mkdir -p output
+          cp target/aarch64-linux-android/release/mem_cleaner output/mem_cleaner_smol
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mem_cleaner_smol_arm64
+          path: output/mem_cleaner_smol
