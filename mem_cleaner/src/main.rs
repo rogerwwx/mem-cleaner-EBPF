@@ -1,7 +1,7 @@
 use aya::maps::perf::AsyncPerfEventArray;
 use aya::programs::TracePoint;
 use aya::util::online_cpus;
-use aya::Ebpf; // 修复：替换废弃的 Bpf 为 Ebpf
+use aya::Ebpf; // 替换废弃的 Bpf 为 Ebpf
 use bytes::BytesMut;
 use mem_cleaner_common::ProcessEvent;
 
@@ -9,21 +9,13 @@ use fxhash::FxHashSet;
 use nix::sys::signal::{kill, Signal};
 use nix::unistd::Pid;
 
-// 引入 Smol 和 Async-io
-use async_io::Async;
-use smol;
-
-// TimerFd 相关依赖
-use nix::sys::time::TimeSpec;
-use nix::sys::timerfd::{ClockId, Expiration, TimerFd, TimerFlags, TimerSetTimeFlags};
-
 use std::collections::VecDeque;
 use std::env;
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::os::unix::fs::MetadataExt;
 use std::sync::mpsc::{self, RecvTimeoutError};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex}; // 🔴 新增：用于 Logger 线程安全
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -51,37 +43,194 @@ struct AppConfig {
     whitelist: FxHashSet<WhitelistRule>,
 }
 
-// 修复版：基于 timerfd 的异步 sleep（非阻塞 + 安全的 unsafe）
-async fn nix_sleep(duration: Duration) -> std::io::Result<()> {
-    // 1. 创建非阻塞的 timerfd（必须设置 TFD_NONBLOCK）
-    let tfd = TimerFd::new(ClockId::CLOCK_MONOTONIC, TimerFlags::TFD_NONBLOCK)
-        .map_err(std::io::Error::from)?;
-
-    // 2. 注册到 Smol 的 Async Reactor
-    let mut timer = Async::new(tfd)?;
-
-    // 3. 配置定时器（单次触发）
-    // 安全证明：此时无异步等待，独占访问底层 TimerFd 不会有数据竞争
-    unsafe {
-        timer.get_mut().set(
-            Expiration::OneShot(TimeSpec::from_duration(duration)),
-            TimerSetTimeFlags::empty(),
-        )?;
+// 🔥 使用 Tokio 的 main 函数宏，启动异步运行时
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args: Vec<String> = env::args().collect();
+    if args.len() < 2 {
+        eprintln!("Usage: {} <config_path>[log_path]", args[0]);
+        std::process::exit(1);
     }
 
-    // 4. 异步等待 timerfd 可读（真正的非阻塞挂起）
-    timer.readable().await?;
-
-    // 5. 清理 timerfd 状态（必须调用，否则下次会立即返回）
-    // 安全证明：readable() 已完成，无并发 poll，非阻塞模式不会卡线程
-    unsafe {
-        timer.get_mut().wait()?;
+    let config = Arc::new(load_config(&args[1]));
+    // 🔴 改动1：用 Arc<Mutex> 封装 Logger，实现线程安全共享
+    let logger = Arc::new(Mutex::new(Logger::new(if args.len() > 2 {
+        Some(args[2].clone())
+    } else {
+        None
+    })));
+    // 初始化启动日志（线程安全方式）
+    if let Ok(mut l) = logger.lock() {
+        if let Some(l_inner) = &mut *l {
+            l_inner.write_startup();
+        }
     }
 
-    Ok(())
+    println!("⚡ 初始化 Android 进程压制器 (双线程终极稳定版) ⚡");
+
+    println!("📦 加载 eBPF 模块...");
+    let mut bpf = Ebpf::load(&BPF_BYTES.0)?;
+
+    let program: &mut TracePoint = bpf.program_mut("sched_process_fork").unwrap().try_into()?;
+    program.load()?;
+    program.attach("sched", "sched_process_fork")?;
+    println!("✅ eBPF 挂载成功: 仅拦截 UID 0 孵化");
+
+    // ==========================================
+    // 🧵 业务线程 (纯标准库，无 Tokio)
+    // ==========================================
+    let (tx, rx) = mpsc::channel::<u32>();
+
+    let worker_config = config.clone();
+    let worker_logger = logger.clone(); // 🔴 改动2：传递线程安全的 Logger 克隆
+
+    thread::spawn(move || {
+        let mut monitoring_pids: FxHashSet<u32> = FxHashSet::default();
+        let mut pending_queue: VecDeque<(u32, Instant)> = VecDeque::new();
+        let mut next_cleanup = Instant::now() + Duration::from_secs(worker_config.interval);
+
+        println!("🛠️  业务线程已启动，等待 eBPF 投喂...");
+
+        loop {
+            let now = Instant::now();
+            let mut timeout = next_cleanup.saturating_duration_since(now);
+
+            if let Some(&(_, add_time)) = pending_queue.front() {
+                let mature_time = add_time + Duration::from_secs(INIT_DELAY_SECS);
+                let time_to_mature = mature_time.saturating_duration_since(now);
+                if time_to_mature < timeout {
+                    timeout = time_to_mature;
+                }
+            }
+            if timeout.is_zero() {
+                while let Ok(pid) = rx.try_recv() {
+                    pending_queue.push_back((pid, Instant::now()));
+                }
+            } else {
+                match rx.recv_timeout(timeout) {
+                    Ok(pid) => {
+                        pending_queue.push_back((pid, Instant::now()));
+                        while let Ok(p) = rx.try_recv() {
+                            pending_queue.push_back((p, Instant::now()));
+                        }
+                    }
+                    Err(RecvTimeoutError::Timeout) => {}
+                    Err(RecvTimeoutError::Disconnected) => break,
+                }
+            }
+            let now = Instant::now();
+            while let Some(&(pid, add_time)) = pending_queue.front() {
+                if now.duration_since(add_time).as_secs() >= INIT_DELAY_SECS {
+                    pending_queue.pop_front();
+                    if let Some(uid) = get_process_uid(pid) {
+                        if uid >= MIN_APP_UID {
+                            let cmdline = get_cmdline(pid);
+                            if !cmdline.is_empty()
+                                && cmdline.contains(':')
+                                && !cmdline.contains("zygote")
+                                && !is_in_whitelist(&cmdline, &worker_config.whitelist)
+                            {
+                                monitoring_pids.insert(pid);
+                            }
+                        }
+                    }
+                } else {
+                    break;
+                }
+            }
+            if now >= next_cleanup {
+                let mut pids_to_remove = Vec::new();
+                let mut killed_in_this_round = Vec::new();
+                for &pid in &monitoring_pids {
+                    match get_process_uid(pid) {
+                        Some(uid) if uid < MIN_APP_UID => {
+                            pids_to_remove.push(pid);
+                            continue;
+                        }
+                        None => {
+                            pids_to_remove.push(pid);
+                            continue;
+                        }
+                        _ => {}
+                    }
+                    let cmdline = get_cmdline(pid);
+                    if cmdline.is_empty() {
+                        pids_to_remove.push(pid);
+                        continue;
+                    }
+                    let score = get_oom_score(pid);
+                    if score >= OOM_SCORE_THRESHOLD {
+                        if kill(Pid::from_raw(pid as i32), Signal::SIGKILL).is_ok() {
+                            killed_in_this_round
+                                .push(format!("PID:{} | OOM:{} | {}", pid, score, cmdline));
+                            pids_to_remove.push(pid);
+                        } else {
+                            pids_to_remove.push(pid);
+                        }
+                    }
+                }
+                // 🔴 改动3：线程安全地写入日志（锁定 Mutex 后操作）
+                if !killed_in_this_round.is_empty() {
+                    if let Ok(mut l) = worker_logger.lock() {
+                        if let Some(l_inner) = &mut *l {
+                            l_inner.write_cleanup(&killed_in_this_round);
+                        }
+                    }
+                }
+                for pid in pids_to_remove {
+                    monitoring_pids.remove(&pid);
+                }
+                next_cleanup = Instant::now() + Duration::from_secs(worker_config.interval);
+            }
+        }
+    });
+
+    // ==========================================
+    // 🎯 主线程 (Tokio I/O 引擎)
+    // ==========================================
+    let mut perf_array = AsyncPerfEventArray::try_from(bpf.take_map("EVENTS").unwrap())?;
+
+    println!("🎧 Tokio I/O 引擎已启动，接管所有 CPU 核心中断...");
+
+    let cpus = online_cpus().map_err(|(msg, err)| format!("获取CPU列表失败: {}: {}", msg, err))?;
+    for cpu_id in cpus {
+        let mut buf = perf_array.open(cpu_id, None)?;
+        let tx_clone = tx.clone();
+
+        tokio::spawn(async move {
+            let mut buffers = (0..10)
+                .map(|_| BytesMut::with_capacity(1024))
+                .collect::<Vec<_>>();
+            loop {
+                match buf.read_events(&mut buffers).await {
+                    Ok(events) => {
+                        for i in 0..events.read {
+                            // 🔴 改动4：添加内存长度检查，避免越界（unsafe 安全前提）
+                            let event_size = std::mem::size_of::<ProcessEvent>();
+                            let buf_len = buffers[i].len();
+                            if buf_len >= event_size {
+                                let ptr = buffers[i].as_ptr() as *const ProcessEvent;
+                                let event = unsafe { std::ptr::read_unaligned(ptr) };
+                                let _ = tx_clone.send(event.pid);
+                            }
+                            // 🔴 改动5：清空缓冲区，防止重复读取相同数据
+                            buffers[i].clear();
+                        }
+                    }
+                    Err(_) => continue,
+                }
+            }
+        });
+    }
+
+    // 主线程保活
+    loop {
+        tokio::time::sleep(Duration::from_secs(3600)).await;
+    }
 }
 
-// ================== 辅助函数 (保持逻辑不变，仅适配 Logger 线程安全) ==================
+// ================== 辅助函数 (仅修复 Logger 的 Send 实现) ==================
+
 fn get_process_uid(pid: u32) -> Option<u32> {
     fs::metadata(format!("/proc/{}", pid)).ok().map(|m| m.uid())
 }
@@ -171,6 +320,9 @@ struct Logger {
     path: std::path::PathBuf,
     last_write_date: Option<Date>,
 }
+// 🔴 改动6：为 Logger 实现 Send trait（其所有字段均为 Send，安全）
+unsafe impl Send for Logger {}
+
 impl Logger {
     fn new(path: Option<String>) -> Option<Self> {
         path.map(|p| Self {
@@ -206,7 +358,7 @@ impl Logger {
         if let Some(mut w) = self.open_writer() {
             let _ = writeln!(
                 w,
-                "=== 启动时间: {} ===\n⚡ eBPF 进程压制 (Smol+Timerfd) 已启动 ⚡\n",
+                "=== 启动时间: {} ===\n⚡ eBPF 进程压制 (双线程Tokio版) 已启动 ⚡\n",
                 now_fmt()
             );
         }
@@ -220,204 +372,4 @@ impl Logger {
             let _ = writeln!(w);
         }
     }
-}
-// 修复：为 Logger 实现 Send（其字段均为 Send，安全）
-unsafe impl Send for Logger {}
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // 使用 Smol 启动异步运行时
-    smol::block_on(async {
-        let args: Vec<String> = env::args().collect();
-        if args.len() < 2 {
-            eprintln!("Usage: {} <config_path>[log_path]", args[0]);
-            std::process::exit(1);
-        }
-
-        let config = Arc::new(load_config(&args[1]));
-        // 修复：用 Arc<Mutex> 封装 Logger，实现线程安全共享
-        let logger = Arc::new(Mutex::new(Logger::new(if args.len() > 2 {
-            Some(args[2].clone())
-        } else {
-            None
-        })));
-        // 初始化启动日志
-        if let Ok(mut l) = logger.lock() {
-            if let Some(l_inner) = &mut *l {
-                l_inner.write_startup();
-            }
-        }
-
-        println!("⚡ 初始化 Android 进程压制器 (Smol + Timerfd 稳定版) ⚡");
-
-        println!("📦 加载 eBPF 模块...");
-        // 修复：替换废弃的 Bpf::load_bytes 为 Ebpf::load
-        let mut bpf = Ebpf::load(&BPF_BYTES.0)?;
-
-        let program: &mut TracePoint = bpf.program_mut("sched_process_fork").unwrap().try_into()?;
-        program.load()?;
-        program.attach("sched", "sched_process_fork")?;
-        println!("✅ eBPF 挂载成功: 仅拦截 UID 0 孵化");
-
-        // ==========================================
-        // 🧵 业务线程 (纯标准库，无 Smol)
-        // ==========================================
-        let (tx, rx) = mpsc::channel::<u32>();
-        let worker_config = config.clone();
-        let worker_logger = logger.clone(); // 传递线程安全的 Logger
-
-        thread::spawn(move || {
-            let mut monitoring_pids: FxHashSet<u32> = FxHashSet::default();
-            let mut pending_queue: VecDeque<(u32, Instant)> = VecDeque::new();
-            let mut next_cleanup = Instant::now() + Duration::from_secs(worker_config.interval);
-
-            println!("🛠️  业务线程已启动，等待 eBPF 投喂...");
-
-            loop {
-                let now = Instant::now();
-                let mut timeout = next_cleanup.saturating_duration_since(now);
-
-                if let Some(&(_, add_time)) = pending_queue.front() {
-                    let mature_time = add_time + Duration::from_secs(INIT_DELAY_SECS);
-                    let time_to_mature = mature_time.saturating_duration_since(now);
-                    if time_to_mature < timeout {
-                        timeout = time_to_mature;
-                    }
-                }
-                if timeout.is_zero() {
-                    while let Ok(pid) = rx.try_recv() {
-                        pending_queue.push_back((pid, Instant::now()));
-                    }
-                } else {
-                    match rx.recv_timeout(timeout) {
-                        Ok(pid) => {
-                            pending_queue.push_back((pid, Instant::now()));
-                            while let Ok(p) = rx.try_recv() {
-                                pending_queue.push_back((p, Instant::now()));
-                            }
-                        }
-                        Err(RecvTimeoutError::Timeout) => {}
-                        Err(RecvTimeoutError::Disconnected) => break,
-                    }
-                }
-                let now = Instant::now();
-                while let Some(&(pid, add_time)) = pending_queue.front() {
-                    if now.duration_since(add_time).as_secs() >= INIT_DELAY_SECS {
-                        pending_queue.pop_front();
-                        if let Some(uid) = get_process_uid(pid) {
-                            if uid >= MIN_APP_UID {
-                                let cmdline = get_cmdline(pid);
-                                if !cmdline.is_empty()
-                                    && cmdline.contains(':')
-                                    && !cmdline.contains("zygote")
-                                    && !is_in_whitelist(&cmdline, &worker_config.whitelist)
-                                {
-                                    monitoring_pids.insert(pid);
-                                }
-                            }
-                        }
-                    } else {
-                        break;
-                    }
-                }
-                if now >= next_cleanup {
-                    let mut pids_to_remove = Vec::new();
-                    let mut killed_in_this_round = Vec::new();
-                    for &pid in &monitoring_pids {
-                        match get_process_uid(pid) {
-                            Some(uid) if uid < MIN_APP_UID => {
-                                pids_to_remove.push(pid);
-                                continue;
-                            }
-                            None => {
-                                pids_to_remove.push(pid);
-                                continue;
-                            }
-                            _ => {}
-                        }
-                        let cmdline = get_cmdline(pid);
-                        if cmdline.is_empty() {
-                            pids_to_remove.push(pid);
-                            continue;
-                        }
-                        let score = get_oom_score(pid);
-                        if score >= OOM_SCORE_THRESHOLD {
-                            if kill(Pid::from_raw(pid as i32), Signal::SIGKILL).is_ok() {
-                                killed_in_this_round
-                                    .push(format!("PID:{} | OOM:{} | {}", pid, score, cmdline));
-                                pids_to_remove.push(pid);
-                            } else {
-                                pids_to_remove.push(pid);
-                            }
-                        }
-                    }
-                    // 修复：线程安全地写入日志
-                    if !killed_in_this_round.is_empty() {
-                        if let Ok(mut l) = worker_logger.lock() {
-                            if let Some(l_inner) = &mut *l {
-                                l_inner.write_cleanup(&killed_in_this_round);
-                            }
-                        }
-                    }
-                    for pid in pids_to_remove {
-                        monitoring_pids.remove(&pid);
-                    }
-                    next_cleanup = Instant::now() + Duration::from_secs(worker_config.interval);
-                }
-            }
-        });
-
-        // ==========================================
-        // 🎯 主线程 (Smol I/O 引擎)
-        // ==========================================
-        let mut perf_array = AsyncPerfEventArray::try_from(bpf.take_map("EVENTS").unwrap())?;
-
-        println!("🎧 Smol I/O 引擎已启动，接管所有 CPU 核心中断...");
-
-        // 修复：处理 online_cpus() 的错误类型转换
-        let cpus =
-            online_cpus().map_err(|(msg, err)| format!("获取CPU列表失败: {}: {}", msg, err))?;
-        for cpu_id in cpus {
-            let mut buf = perf_array.open(cpu_id, None)?;
-            let tx_clone = tx.clone();
-
-            // 启动 Smol 异步任务，读取每个 CPU 的 perf 事件
-            smol::spawn(async move {
-                let mut buffers = (0..10)
-                    .map(|_| BytesMut::with_capacity(1024))
-                    .collect::<Vec<_>>();
-                loop {
-                    // 异步读取 eBPF perf 事件
-                    match buf.read_events(&mut buffers).await {
-                        Ok(events) => {
-                            for i in 0..events.read {
-                                // 修复：添加长度检查，避免内存越界
-                                let buf_len = buffers[i].len();
-                                let event_size = std::mem::size_of::<ProcessEvent>();
-                                if buf_len >= event_size {
-                                    let ptr = buffers[i].as_ptr() as *const ProcessEvent;
-                                    // 安全读取：已检查长度，无越界风险
-                                    let event = unsafe { std::ptr::read_unaligned(ptr) };
-                                    let _ = tx_clone.send(event.pid);
-                                }
-                                // 截断缓冲区，避免重复读取
-                                buffers[i].clear();
-                            }
-                        }
-                        Err(_) => continue,
-                    }
-                }
-            })
-            .detach(); // 分离任务，让其后台运行
-        }
-
-        // 主线程保活循环（非阻塞异步 sleep）
-        println!("🚀 系统运行中...");
-        loop {
-            if let Err(e) = nix_sleep(Duration::from_secs(3600)).await {
-                eprintln!("TimerFD error: {:?}, retrying...", e);
-                // 异常时降级为短时间阻塞 sleep，避免无限循环
-                thread::sleep(Duration::from_secs(5));
-            }
-        }
-    })
 }
