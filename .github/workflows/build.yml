@@ -4,13 +4,13 @@ on:
   push:
     branches:
       - main
-      - Tokio
-      - Smol
+      - tokio
+      - smol
   workflow_dispatch:
 
 jobs:
   build-tokio:
-    if: github.ref == 'refs/heads/Tokio'
+    if: github.ref == 'refs/heads/tokio'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Source Code
@@ -55,8 +55,8 @@ jobs:
         run: |
           cp target/bpfel-unknown-none/release/mem_cleaner_ebpf mem_cleaner/src/mem_cleaner_ebpf.o
 
-      - name: Build User-space Daemon (Tokio)
-        run: cross +stable build --target aarch64-linux-android -p mem_cleaner --release --features runtime-tokio
+      - name: Build User-space Daemon (Tokio branch)
+        run: cross +stable build --target aarch64-linux-android -p mem_cleaner --release
 
       - name: Package Binary
         run: |
@@ -70,7 +70,7 @@ jobs:
           path: output/mem_cleaner_tokio
 
   build-smol:
-    if: github.ref == 'refs/heads/Smol'
+    if: github.ref == 'refs/heads/smol'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Source Code
@@ -115,8 +115,8 @@ jobs:
         run: |
           cp target/bpfel-unknown-none/release/mem_cleaner_ebpf mem_cleaner/src/mem_cleaner_ebpf.o
 
-      - name: Build User-space Daemon (Smol)
-        run: cross +stable build --target aarch64-linux-android -p mem_cleaner --release --features runtime-smol
+      - name: Build User-space Daemon (Smol branch)
+        run: cross +stable build --target aarch64-linux-android -p mem_cleaner --release
 
       - name: Package Binary
         run: |
