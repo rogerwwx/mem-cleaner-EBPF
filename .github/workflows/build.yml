@@ -12,28 +12,36 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      # 1. 安装稳定版工具链 (用于编译 Android 用户态)
+      # 缓存 Cargo 依赖 + target（依赖库）
+      - name: Cache Cargo + Target
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-target-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-target-
+
+      # 安装工具链
       - name: Install Stable Rust Toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-linux-android
 
-      # 2. 手动安装 Nightly 工具链及 rust-src (专用于编译 eBPF)
       - name: Install Nightly Toolchain for eBPF
         uses: dtolnay/rust-toolchain@nightly
         with:
           components: rust-src
 
-      # 3. 安装 eBPF 专用链接器 (核心修复！)
       - name: Install bpf-linker
         run: cargo install bpf-linker
 
-      # 4. 安装 Cross (用于跨平台编译 Android ARM64)
       - name: Install Cross
         run: cargo install cross --git https://github.com/cross-rs/cross
 
-      # 5. 使用 nightly 编译 eBPF
-      # 关键修改：显式添加 RUSTFLAGS，确保使用 bpf-linker
+      # 编译 eBPF（每次都会覆盖旧产物）
       - name: Build eBPF Kernel Program
         run: |
           cd mem_cleaner_ebpf
@@ -42,27 +50,20 @@ jobs:
             -Z build-std=core \
             --release
 
-      # 验证一下文件类型，如果是 "ELF 64-bit LSB eBPF"，那就对了
-# ... (前面 1-5 步不变) ...
-
-      - name: Verify eBPF Artifact
-        run: file target/bpfel-unknown-none/release/mem_cleaner_ebpf
-
-      # 🔥 【新增步骤】强制把 eBPF 文件塞进 src 目录，绕过 Cross 的 target 隔离！
+      # 覆盖 eBPF .o 文件
       - name: Copy eBPF Object to Src
         run: |
           cp target/bpfel-unknown-none/release/mem_cleaner_ebpf mem_cleaner/src/mem_cleaner_ebpf.o
           ls -la mem_cleaner/src/mem_cleaner_ebpf.o
 
-      # 6. 使用 stable 和 cross 编译 Android 主程序
+      # 编译 Android 用户态
       - name: Build User-space Daemon for Android (aarch64)
         env:
           CROSS_NO_WARNINGS: 0
         run: cross +stable build --target aarch64-linux-android -p mem_cleaner --release
 
-      # ... (后面重命名和上传产物的步骤不变) ...
-
-      - name: Rename and Package Binary
+      # 打包产物
+      - name: Package Binary
         run: |
           mkdir -p output
           cp target/aarch64-linux-android/release/mem_cleaner output/mem_cleaner
